@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrarse - Curso Manager</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
     <script src="app.js"></script>
     <script src="auth.js"></script>
 </head>
@@ -61,7 +63,7 @@
             `;
         }
 
-        function handleRegister(e) {
+        async function handleRegister(e) {
             e.preventDefault();
             const username = document.getElementById("reg-username").value.trim();
             const email = document.getElementById("reg-email").value.trim();
@@ -79,7 +81,8 @@
                 return;
             }
 
-            const res = AUTH.register(username, email, password);
+            showAlert("info", "Registrando usuario...");
+            const res = await AUTH.register(username, email, password);
 
             if (res.success) {
                 window.location.href = "login.html?registered=true";
