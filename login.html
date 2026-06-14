@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - Curso Manager</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
     <script src="app.js"></script>
     <script src="auth.js"></script>
 </head>
@@ -77,12 +79,13 @@
             `;
         }
 
-        function handleLogin(e) {
+        async function handleLogin(e) {
             e.preventDefault();
             const usernameInput = document.getElementById("username").value;
             const passwordInput = document.getElementById("password").value;
 
-            const res = AUTH.login(usernameInput, passwordInput);
+            showAlert("info", "Iniciando sesión...");
+            const res = await AUTH.login(usernameInput, passwordInput);
 
             if (res.success) {
                 window.location.href = "dashboard.html";
