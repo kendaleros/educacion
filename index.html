@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curso Manager</title>
+    <script src="app.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const user = AUTH.getCurrentUser();
+            if (user) {
+                window.location.href = "dashboard.html";
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+    </script>
+</head>
+<body style="background-color: #080c14; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+    <div style="color: #94a3b8; font-family: sans-serif; font-size: 1.1rem; text-align: center;">
+        Cargando Curso Manager...
+    </div>
+</body>
+</html>

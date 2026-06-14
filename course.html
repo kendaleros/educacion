@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Curso - Curso Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js"></script>
+    <script src="auth.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="nav-container">
+            <a href="dashboard.html" class="nav-brand">Curso Manager</a>
+            <div class="nav-user">
+                <div class="user-info">
+                    <div id="header-username" class="user-username">Cargando...</div>
+                    <div id="header-role" class="user-role">Estudiante</div>
+                </div>
+                <button class="btn btn-secondary btn-small" onclick="AUTH.logout()">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main visualizer layout -->
+    <main>
+        <div style="margin-bottom: 24px;">
+            <a href="dashboard.html" style="color: var(--primary); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                Volver al Dashboard
+            </a>
+        </div>
+
+        <h1 id="course-title" style="font-size: 2.2rem; margin-bottom: 8px;">Cargando Curso...</h1>
+        <p id="course-desc" style="margin-bottom: 32px; font-size: 1rem;"></p>
+
+        <div class="course-viewer-grid">
+            <!-- Left Side: Video Player -->
+            <div class="player-container">
+                <div class="video-wrapper">
+                    <!-- Video player element or placeholder -->
+                    <div id="player-placeholder" class="video-no-content">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+                        <h3>Selecciona un video para comenzar a reproducir</h3>
+                        <p style="margin-top: 4px;">Utiliza la barra lateral derecha para elegir una lección.</p>
+                    </div>
+                    <iframe id="video-player" src="" allowfullscreen style="display: none;"></iframe>
+                </div>
+
+                <div id="active-video-details" class="glass-card" style="padding: 24px; display: none;">
+                    <h2 id="active-video-title" style="font-size: 1.5rem; margin-bottom: 12px;">Título de la Lección</h2>
+                    <p id="active-video-desc" style="font-size: 0.95rem;"></p>
+                </div>
+            </div>
+
+            <!-- Right Side: Sidebar Navigation -->
+            <div class="sidebar-container">
+                <div class="glass-card" style="padding: 24px; height: 100%;">
+                    <h3 class="sidebar-title">Contenido del Curso</h3>
+                    <div id="modules-accordion" style="margin-top: 16px;">
+                        <!-- Modules accordions and videos -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Route Guard
+        const currentUser = AUTH.checkAuth();
+
+        let currentCourse = null;
+        let activeVideoId = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!currentUser) return;
+
+            // Render user header profiles
+            document.getElementById("header-username").innerText = currentUser.username;
+            document.getElementById("header-role").innerText = currentUser.isStaff ? "Administrador" : "Estudiante";
+
+            // Load course details
+            const urlParams = new URLSearchParams(window.location.search);
+            const courseId = parseInt(urlParams.get("id"));
+
+            if (!courseId) {
+                window.location.href = "dashboard.html";
+                return;
+            }
+
+            currentCourse = DB.getCourses().find(c => c.id === courseId);
+            if (!currentCourse) {
+                window.location.href = "dashboard.html";
+                return;
+            }
+
+            // Render course title and description
+            document.getElementById("course-title").innerText = currentCourse.title;
+            document.getElementById("course-desc").innerText = currentCourse.description;
+            document.title = `${currentCourse.title} - Curso Manager`;
+
+            // Render modules and videos accordion sidebar
+            renderModulesAccordion();
+
+            // Set up video url parameter if provided
+            const videoId = parseInt(urlParams.get("video"));
+            if (videoId) {
+                playVideo(videoId);
+            } else {
+                // Auto play first video of first module
+                autoPlayFirstVideo();
+            }
+        });
+
+        function renderModulesAccordion() {
+            const modules = DB.getModules()
+                .filter(m => m.courseId === currentCourse.id)
+                .sort((a, b) => a.order - b.order);
+
+            const container = document.getElementById("modules-accordion");
+
+            if (modules.length === 0) {
+                container.innerHTML = `<p style="color: var(--text-muted); font-style: italic; text-align: center;">No hay módulos para este curso aún.</p>`;
+                return;
+            }
+
+            container.innerHTML = modules.map((mod, index) => {
+                const videos = DB.getVideos()
+                    .filter(v => v.moduleId === mod.id)
+                    .sort((a, b) => a.order - b.order);
+
+                const videosHtml = videos.map(vid => `
+                    <li id="video-item-${vid.id}" class="playlist-video-item" onclick="playVideo(${vid.id})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+                        <span>${escapeHTML(vid.title)}</span>
+                    </li>
+                `).join("");
+
+                return `
+                    <div class="accordion-item">
+                        <button class="accordion-header" onclick="toggleAccordion('content-${mod.id}', this)">
+                            <span>${escapeHTML(mod.title)}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(0deg); transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div id="content-mod-${mod.id}" class="accordion-content">
+                            <ul class="playlist-videos">
+                                ${videosHtml || '<li class="playlist-video-item" style="cursor: default; pointer-events: none; font-style: italic;">Sin lecciones en este módulo</li>'}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function toggleAccordion(contentId, button) {
+            // Find accordion content by selecting the div next to header button
+            const content = button.nextElementSibling;
+            const icon = button.querySelector("svg");
+
+            content.classList.toggle("open");
+            
+            if (content.classList.contains("open")) {
+                icon.style.transform = "rotate(180deg)";
+            } else {
+                icon.style.transform = "rotate(0deg)";
+            }
+        }
+
+        function playVideo(id) {
+            const video = DB.getVideos().find(v => v.id === id);
+            if (!video) return;
+
+            // Remove active classes
+            document.querySelectorAll(".playlist-video-item").forEach(item => {
+                item.classList.remove("active");
+            });
+
+            // Add active class
+            const activeItem = document.getElementById(`video-item-${id}`);
+            if (activeItem) {
+                activeItem.classList.add("active");
+                
+                // Automatically open its parent accordion if closed
+                const contentDiv = activeItem.closest(".accordion-content");
+                if (contentDiv && !contentDiv.classList.contains("open")) {
+                    contentDiv.classList.add("open");
+                    const accordionHeaderButton = contentDiv.previousElementSibling;
+                    if (accordionHeaderButton) {
+                        const icon = accordionHeaderButton.querySelector("svg");
+                        if (icon) icon.style.transform = "rotate(180deg)";
+                    }
+                }
+            }
+
+            activeVideoId = id;
+
+            // Render player elements
+            const player = document.getElementById("video-player");
+            const placeholder = document.getElementById("player-placeholder");
+            const details = document.getElementById("active-video-details");
+
+            placeholder.style.display = "none";
+            player.style.display = "block";
+            details.style.display = "block";
+
+            player.src = getEmbedUrl(video.videoUrl);
+            document.getElementById("active-video-title").innerText = video.title;
+            document.getElementById("active-video-desc").innerText = video.description || "Esta lección no tiene descripción adicional.";
+
+            // Update URL parameter without reloading page
+            const newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + `?id=${currentCourse.id}&video=${id}`;
+            window.history.replaceState({path:newurl}, '', newurl);
+        }
+
+        function autoPlayFirstVideo() {
+            const modules = DB.getModules()
+                .filter(m => m.courseId === currentCourse.id)
+                .sort((a, b) => a.order - b.order);
+
+            if (modules.length > 0) {
+                // Find first video
+                for (const mod of modules) {
+                    const videos = DB.getVideos()
+                        .filter(v => v.moduleId === mod.id)
+                        .sort((a, b) => a.order - b.order);
+                    
+                    if (videos.length > 0) {
+                        playVideo(videos[0].id);
+                        break;
+                    }
+                }
+            }
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>

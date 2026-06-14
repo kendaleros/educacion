@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Curso Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js"></script>
+    <script src="auth.js"></script>
+</head>
+<body>
+    <div class="auth-container">
+        <!-- Login Form State -->
+        <div id="login-state" class="glass-card auth-card">
+            <h1 class="auth-logo">Curso Manager</h1>
+            <p class="auth-subtitle">Inicia sesión para acceder a tus cursos</p>
+
+            <div id="alert-container"></div>
+
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label" for="username">Usuario o Correo</label>
+                    <input class="form-control" type="text" id="username" required placeholder="admin o estudiante">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Contraseña</label>
+                    <input class="form-control" type="password" id="password" required placeholder="••••••••">
+                </div>
+
+                <button class="btn btn-primary btn-full" type="submit">
+                    Iniciar Sesión
+                </button>
+            </form>
+
+            <div class="auth-switch">
+                ¿No tienes cuenta? <a href="register.html">Regístrate aquí</a>
+            </div>
+        </div>
+
+        <!-- Pending Approval State -->
+        <div id="pending-state" class="glass-card auth-card" style="display: none;">
+            <div class="pending-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <h2>Cuenta Pendiente</h2>
+            <p>Lo sentimos, <strong id="pending-username"></strong>. Tu cuenta aún no ha sido aprobada por un administrador. Por favor, contacta con soporte o espera la activación.</p>
+            <button class="btn btn-secondary btn-full" onclick="showLoginForm()">
+                Volver al Inicio
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Check if user is already logged in
+        AUTH.redirectIfLoggedIn();
+
+        // Handle URL parameters (e.g. registration success or pending redirect)
+        document.addEventListener("DOMContentLoaded", () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const pendingUser = urlParams.get("pending");
+            const registered = urlParams.get("registered");
+
+            if (pendingUser) {
+                showPendingState(pendingUser);
+            } else if (registered) {
+                showAlert("success", "Cuenta creada con éxito. Pendiente de aprobación por un administrador.");
+            }
+        });
+
+        function showAlert(type, message) {
+            const container = document.getElementById("alert-container");
+            container.innerHTML = `
+                <div class="alert alert-${type}">
+                    <span>${message}</span>
+                </div>
+            `;
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const usernameInput = document.getElementById("username").value;
+            const passwordInput = document.getElementById("password").value;
+
+            const res = AUTH.login(usernameInput, passwordInput);
+
+            if (res.success) {
+                window.location.href = "dashboard.html";
+            } else if (res.pending) {
+                showPendingState(res.username);
+            } else {
+                showAlert("danger", res.message);
+            }
+        }
+
+        function showPendingState(username) {
+            document.getElementById("login-state").style.display = "none";
+            document.getElementById("pending-state").style.display = "block";
+            document.getElementById("pending-username").innerText = username;
+        }
+
+        function showLoginForm() {
+            // Clear URL params
+            window.history.replaceState({}, document.title, window.location.pathname);
+            document.getElementById("login-state").style.display = "block";
+            document.getElementById("pending-state").style.display = "none";
+            document.getElementById("alert-container").innerHTML = "";
+            document.getElementById("login-form").reset();
+        }
+    </script>
+</body>
+</html>

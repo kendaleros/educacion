@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Curso Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js"></script>
+    <script src="auth.js"></script>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <header>
+        <div class="nav-container">
+            <a href="dashboard.html" class="nav-brand">Curso Manager</a>
+            <div class="nav-user">
+                <div class="user-info">
+                    <div id="header-username" class="user-username">Cargando...</div>
+                    <div id="header-role" class="user-role">Cargando...</div>
+                </div>
+                <button class="btn btn-secondary btn-small" onclick="AUTH.logout()">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main>
+        <div id="alert-container"></div>
+        <h1 id="dashboard-title" class="dashboard-title">Mi Dashboard</h1>
+
+        <!-- STUDENT DASHBOARD -->
+        <div id="student-dashboard" style="display: none;">
+            <p style="margin-bottom: 24px;">Selecciona uno de tus cursos activos para comenzar a aprender:</p>
+            <div id="student-courses-grid" class="courses-grid">
+                <!-- Dynamic student course cards -->
+            </div>
+        </div>
+
+        <!-- ADMIN DASHBOARD -->
+        <div id="admin-dashboard" class="admin-grid" style="display: none;">
+            <!-- Left Sidebar (Users Control) -->
+            <div class="glass-card admin-sidebar-panel">
+                <h3>Gestión de Usuarios</h3>
+                
+                <div>
+                    <h4 style="margin-bottom: 12px; font-size: 0.9rem; text-transform: uppercase; color: var(--warning);">Pendientes de Aprobación</h4>
+                    <div id="pending-users-list" class="admin-users-list">
+                        <!-- Dynamic pending users list -->
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style="margin-bottom: 12px; font-size: 0.9rem; text-transform: uppercase; color: var(--success);">Estudiantes Activos</h4>
+                    <div id="active-users-list" class="admin-users-list">
+                        <!-- Dynamic active users list -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Main Area (Courses CRUD) -->
+            <div class="glass-card admin-main-panel">
+                <div class="admin-header-actions">
+                    <h2>Cursos de la Plataforma</h2>
+                    <button class="btn btn-primary" onclick="openCourseModal()">
+                        Crear Curso
+                    </button>
+                </div>
+
+                <div id="admin-courses-container">
+                    <!-- Dynamic courses tree lists -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ================= MODALS FOR CRUD ================= -->
+
+    <!-- Course Modal -->
+    <div id="course-modal" class="modal">
+        <div class="glass-card modal-content">
+            <button class="modal-close" onclick="closeModal('course-modal')">&times;</button>
+            <h3 id="course-modal-title" class="modal-title">Crear Curso</h3>
+            <form onsubmit="handleCourseSubmit(event)">
+                <input type="hidden" id="course-id">
+                <div class="form-group">
+                    <label class="form-label" for="course-title">Título del Curso</label>
+                    <input class="form-control" type="text" id="course-title" required placeholder="Ej: Introducción a React">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="course-desc">Descripción</label>
+                    <textarea class="form-control" id="course-desc" required rows="4" placeholder="Escribe el resumen del curso..."></textarea>
+                </div>
+                <button class="btn btn-primary btn-full" type="submit">Guardar Curso</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Module Modal -->
+    <div id="module-modal" class="modal">
+        <div class="glass-card modal-content">
+            <button class="modal-close" onclick="closeModal('module-modal')">&times;</button>
+            <h3 id="module-modal-title" class="modal-title">Agregar Módulo</h3>
+            <form onsubmit="handleModuleSubmit(event)">
+                <input type="hidden" id="module-id">
+                <input type="hidden" id="module-course-id">
+                <div class="form-group">
+                    <label class="form-label" for="module-title">Título del Módulo</label>
+                    <input class="form-control" type="text" id="module-title" required placeholder="Ej: Configuración Inicial">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="module-desc">Descripción (Opcional)</label>
+                    <textarea class="form-control" id="module-desc" rows="3" placeholder="Detalles de lo que se aprenderá..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="module-order">Orden de Visualización</label>
+                    <input class="form-control" type="number" id="module-order" required min="0" value="1">
+                </div>
+                <button class="btn btn-primary btn-full" type="submit">Guardar Módulo</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Video Modal -->
+    <div id="video-modal" class="modal">
+        <div class="glass-card modal-content">
+            <button class="modal-close" onclick="closeModal('video-modal')">&times;</button>
+            <h3 id="video-modal-title" class="modal-title">Agregar Video</h3>
+            <form onsubmit="handleVideoSubmit(event)">
+                <input type="hidden" id="video-id">
+                <input type="hidden" id="video-module-id">
+                <div class="form-group">
+                    <label class="form-label" for="video-title">Título del Video</label>
+                    <input class="form-control" type="text" id="video-title" required placeholder="Ej: 1. Configurando el entorno">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="video-url">URL del Video (YouTube o Vimeo)</label>
+                    <input class="form-control" type="url" id="video-url" required placeholder="https://www.youtube.com/watch?v=...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="video-desc">Descripción (Opcional)</label>
+                    <textarea class="form-control" id="video-desc" rows="2" placeholder="Resumen del contenido del video..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="video-order">Orden de Visualización</label>
+                    <input class="form-control" type="number" id="video-order" required min="0" value="1">
+                </div>
+                <button class="btn btn-primary btn-full" type="submit">Guardar Video</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication and get current user
+        const currentUser = AUTH.checkAuth();
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!currentUser) return;
+
+            // Render Header User Profile info
+            document.getElementById("header-username").innerText = currentUser.username;
+            document.getElementById("header-role").innerText = currentUser.isStaff ? "Administrador" : "Estudiante Aprobado";
+            document.getElementById("dashboard-title").innerText = `Hola, ${currentUser.username}`;
+
+            // Render view depending on role
+            renderDashboard();
+        });
+
+        function renderDashboard() {
+            if (currentUser.isStaff) {
+                document.getElementById("admin-dashboard").style.display = "grid";
+                renderAdminUsers();
+                renderAdminCourses();
+            } else {
+                document.getElementById("student-dashboard").style.display = "block";
+                renderStudentCourses();
+            }
+        }
+
+        function showAlert(type, message) {
+            const container = document.getElementById("alert-container");
+            container.innerHTML = `
+                <div class="alert alert-${type}">
+                    <span>${message}</span>
+                </div>
+            `;
+            setTimeout(() => {
+                container.innerHTML = "";
+            }, 4000);
+        }
+
+        // ================= STUDENT RENDER =================
+        function renderStudentCourses() {
+            const courses = DB.getCourses();
+            const grid = document.getElementById("student-courses-grid");
+            
+            if (courses.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; color: var(--text-muted); text-align: center;">No hay cursos disponibles en este momento.</p>`;
+                return;
+            }
+
+            grid.innerHTML = courses.map(course => {
+                const modules = DB.getModules().filter(m => m.courseId === course.id);
+                const videos = DB.getVideos();
+                const totalVideos = videos.filter(v => modules.some(m => m.id === v.moduleId)).length;
+
+                return `
+                    <div class="glass-card course-card">
+                        <h3 class="course-card-title">${escapeHTML(course.title)}</h3>
+                        <p class="course-card-desc">${escapeHTML(course.description)}</p>
+                        <div class="course-card-footer">
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">${totalVideos} videos disponibles</span>
+                            <a href="course.html?id=${course.id}" class="btn btn-primary btn-small">Ver Curso</a>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        // ================= ADMIN USERS RENDER =================
+        function renderAdminUsers() {
+            const users = DB.getUsers().filter(u => !u.isStaff);
+            const pendingList = document.getElementById("pending-users-list");
+            const activeList = document.getElementById("active-users-list");
+
+            const pending = users.filter(u => !u.isValidated);
+            const active = users.filter(u => u.isValidated);
+
+            pendingList.innerHTML = pending.length === 0 
+                ? `<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 12px;">Ninguno pendiente</p>`
+                : pending.map(u => `
+                    <div class="admin-user-item">
+                        <div class="admin-user-details">
+                            <h4>${escapeHTML(u.username)}</h4>
+                            <p>${escapeHTML(u.email)}</p>
+                        </div>
+                        <button class="btn btn-primary btn-small" onclick="approveUser(${u.id})">Aprobar</button>
+                    </div>
+                `).join("");
+
+            activeList.innerHTML = active.length === 0 
+                ? `<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 12px;">Sin estudiantes activos</p>`
+                : active.map(u => `
+                    <div class="admin-user-item">
+                        <div class="admin-user-details">
+                            <h4>${escapeHTML(u.username)}</h4>
+                            <p>${escapeHTML(u.email)}</p>
+                        </div>
+                        <button class="btn btn-danger btn-small" onclick="suspendUser(${u.id})">Suspender</button>
+                    </div>
+                `).join("");
+        }
+
+        function approveUser(id) {
+            if (DB.approveUser(id)) {
+                showAlert("success", "El usuario ha sido aprobado con éxito.");
+                renderAdminUsers();
+            }
+        }
+
+        function suspendUser(id) {
+            if (confirm("¿Estás seguro de que deseas suspender el acceso de este estudiante?")) {
+                if (DB.suspendUser(id)) {
+                    showAlert("warning", "El usuario ha sido suspendido.");
+                    renderAdminUsers();
+                }
+            }
+        }
+
+        // ================= ADMIN COURSES RENDER =================
+        function renderAdminCourses() {
+            const courses = DB.getCourses();
+            const container = document.getElementById("admin-courses-container");
+
+            if (courses.length === 0) {
+                container.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 40px;">No hay cursos creados en la plataforma. ¡Crea el primero!</p>`;
+                return;
+            }
+
+            container.innerHTML = courses.map(course => {
+                const modules = DB.getModules()
+                    .filter(m => m.courseId === course.id)
+                    .sort((a, b) => a.order - b.order);
+
+                const modulesHtml = modules.map(mod => {
+                    const videos = DB.getVideos()
+                        .filter(v => v.moduleId === mod.id)
+                        .sort((a, b) => a.order - b.order);
+
+                    const videosHtml = videos.map(vid => `
+                        <div class="admin-video-item">
+                            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">
+                                🎥 [${vid.order}] ${escapeHTML(vid.title)} 
+                                <span style="font-size: 0.75rem; opacity: 0.7; font-weight: 400; margin-left: 8px;">(${escapeHTML(vid.videoUrl)})</span>
+                            </span>
+                            <div style="display: flex; gap: 4px;">
+                                <button class="btn btn-secondary btn-small" style="padding: 2px 6px;" onclick="openVideoModal(${mod.id}, ${vid.id})">Editar</button>
+                                <button class="btn btn-danger btn-small" style="padding: 2px 6px;" onclick="deleteVideo(${vid.id})">Borrar</button>
+                            </div>
+                        </div>
+                    `).join("");
+
+                    return `
+                        <div class="admin-module-item">
+                            <div class="admin-module-header">
+                                <h4 style="font-weight: 600;">📁 [${mod.order}] ${escapeHTML(mod.title)}</h4>
+                                <div style="display: flex; gap: 4px;">
+                                    <button class="btn btn-secondary btn-small" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openVideoModal(${mod.id})">+ Agregar Video</button>
+                                    <button class="btn btn-secondary btn-small" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openModuleModal(${course.id}, ${mod.id})">Editar</button>
+                                    <button class="btn btn-danger btn-small" style="padding: 4px 8px; font-size: 0.75rem;" onclick="deleteModule(${mod.id})">Borrar</button>
+                                </div>
+                            </div>
+                            ${mod.description ? `<p style="font-size: 0.8rem; margin: 4px 0 8px 0; color: var(--text-muted);">${escapeHTML(mod.description)}</p>` : ''}
+                            <div class="admin-videos-list">
+                                ${videosHtml || '<p style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">Sin videos agregados aún</p>'}
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+
+                return `
+                    <div class="admin-course-item">
+                        <div class="admin-course-header">
+                            <div>
+                                <h3 style="font-size: 1.35rem; margin-bottom: 4px; color: var(--primary);">${escapeHTML(course.title)}</h3>
+                                <p style="font-size: 0.9rem; color: var(--text-muted);">${escapeHTML(course.description)}</p>
+                            </div>
+                            <div class="admin-course-actions">
+                                <button class="btn btn-primary btn-small" onclick="openModuleModal(${course.id})">+ Agregar Módulo</button>
+                                <button class="btn btn-secondary btn-small" onclick="openCourseModal(${course.id})">Editar</button>
+                                <button class="btn btn-danger btn-small" onclick="deleteCourse(${course.id})">Borrar</button>
+                            </div>
+                        </div>
+                        <div class="admin-modules-container">
+                            ${modulesHtml || '<p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Sin módulos agregados aún</p>'}
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        // ================= CRUD ACTION HANDLERS =================
+
+        // Course CRUD
+        function openCourseModal(id = null) {
+            const modal = document.getElementById("course-modal");
+            const titleEl = document.getElementById("course-modal-title");
+            
+            if (id) {
+                const course = DB.getCourses().find(c => c.id === id);
+                document.getElementById("course-id").value = course.id;
+                document.getElementById("course-title").value = course.title;
+                document.getElementById("course-desc").value = course.description;
+                titleEl.innerText = "Editar Curso";
+            } else {
+                document.getElementById("course-id").value = "";
+                document.getElementById("course-title").value = "";
+                document.getElementById("course-desc").value = "";
+                titleEl.innerText = "Crear Curso";
+            }
+            modal.style.display = "flex";
+        }
+
+        function handleCourseSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById("course-id").value;
+            const title = document.getElementById("course-title").value.trim();
+            const desc = document.getElementById("course-desc").value.trim();
+
+            if (id) {
+                DB.updateCourse(parseInt(id), title, desc);
+                showAlert("success", "El curso ha sido actualizado.");
+            } else {
+                DB.createCourse(title, desc);
+                showAlert("success", "El curso ha sido creado con éxito.");
+            }
+            closeModal('course-modal');
+            renderAdminCourses();
+        }
+
+        function deleteCourse(id) {
+            if (confirm("¿Estás seguro de que deseas eliminar este curso? Se borrarán todos sus módulos y videos de forma definitiva.")) {
+                DB.deleteCourse(id);
+                showAlert("danger", "Curso eliminado.");
+                renderAdminCourses();
+            }
+        }
+
+        // Module CRUD
+        function openModuleModal(courseId, id = null) {
+            const modal = document.getElementById("module-modal");
+            const titleEl = document.getElementById("module-modal-title");
+            document.getElementById("module-course-id").value = courseId;
+            
+            if (id) {
+                const mod = DB.getModules().find(m => m.id === id);
+                document.getElementById("module-id").value = mod.id;
+                document.getElementById("module-title").value = mod.title;
+                document.getElementById("module-desc").value = mod.description;
+                document.getElementById("module-order").value = mod.order;
+                titleEl.innerText = "Editar Módulo";
+            } else {
+                document.getElementById("module-id").value = "";
+                document.getElementById("module-title").value = "";
+                document.getElementById("module-desc").value = "";
+                
+                // Set default order as length + 1
+                const count = DB.getModules().filter(m => m.courseId === courseId).length;
+                document.getElementById("module-order").value = count + 1;
+                titleEl.innerText = "Agregar Módulo";
+            }
+            modal.style.display = "flex";
+        }
+
+        function handleModuleSubmit(e) {
+            e.preventDefault();
+            const courseId = parseInt(document.getElementById("module-course-id").value);
+            const id = document.getElementById("module-id").value;
+            const title = document.getElementById("module-title").value.trim();
+            const desc = document.getElementById("module-desc").value.trim();
+            const order = document.getElementById("module-order").value;
+
+            if (id) {
+                DB.updateModule(parseInt(id), title, desc, order);
+                showAlert("success", "El módulo ha sido actualizado.");
+            } else {
+                DB.createModule(courseId, title, desc, order);
+                showAlert("success", "Módulo agregado al curso.");
+            }
+            closeModal('module-modal');
+            renderAdminCourses();
+        }
+
+        function deleteModule(id) {
+            if (confirm("¿Estás seguro de borrar este módulo y todos sus videos asociados?")) {
+                DB.deleteModule(id);
+                showAlert("danger", "Módulo eliminado.");
+                renderAdminCourses();
+            }
+        }
+
+        // Video CRUD
+        function openVideoModal(moduleId, id = null) {
+            const modal = document.getElementById("video-modal");
+            const titleEl = document.getElementById("video-modal-title");
+            document.getElementById("video-module-id").value = moduleId;
+
+            if (id) {
+                const vid = DB.getVideos().find(v => v.id === id);
+                document.getElementById("video-id").value = vid.id;
+                document.getElementById("video-title").value = vid.title;
+                document.getElementById("video-url").value = vid.videoUrl;
+                document.getElementById("video-desc").value = vid.description;
+                document.getElementById("video-order").value = vid.order;
+                titleEl.innerText = "Editar Video";
+            } else {
+                document.getElementById("video-id").value = "";
+                document.getElementById("video-title").value = "";
+                document.getElementById("video-url").value = "";
+                document.getElementById("video-desc").value = "";
+                
+                // Set default order
+                const count = DB.getVideos().filter(v => v.moduleId === moduleId).length;
+                document.getElementById("video-order").value = count + 1;
+                titleEl.innerText = "Agregar Video";
+            }
+            modal.style.display = "flex";
+        }
+
+        function handleVideoSubmit(e) {
+            e.preventDefault();
+            const moduleId = parseInt(document.getElementById("video-module-id").value);
+            const id = document.getElementById("video-id").value;
+            const title = document.getElementById("video-title").value.trim();
+            const url = document.getElementById("video-url").value.trim();
+            const desc = document.getElementById("video-desc").value.trim();
+            const order = document.getElementById("video-order").value;
+
+            if (id) {
+                DB.updateVideo(parseInt(id), title, url, desc, order);
+                showAlert("success", "El video ha sido actualizado.");
+            } else {
+                DB.createVideo(moduleId, title, url, desc, order);
+                showAlert("success", "Video agregado al módulo.");
+            }
+            closeModal('video-modal');
+            renderAdminCourses();
+        }
+
+        function deleteVideo(id) {
+            if (confirm("¿Estás seguro de borrar este video?")) {
+                DB.deleteVideo(id);
+                showAlert("danger", "Video eliminado.");
+                renderAdminCourses();
+            }
+        }
+
+        // UI Modal closer helper
+        function closeModal(id) {
+            document.getElementById(id).style.display = "none";
+        }
+
+        // Escape HTML helper to prevent XSS in mock CRUD insertions
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>
