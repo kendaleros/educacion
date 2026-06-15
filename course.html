@@ -81,7 +81,7 @@
 
             // Render user header profiles
             document.getElementById("header-username").innerText = currentUser.username;
-            document.getElementById("header-role").innerText = currentUser.isStaff ? "Administrador" : "Estudiante";
+            document.getElementById("header-role").innerText = currentUser.is_staff ? "Administrador" : "Estudiante";
 
             // Load course details
             const urlParams = new URLSearchParams(window.location.search);

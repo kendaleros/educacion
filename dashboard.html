@@ -160,7 +160,7 @@
 
             // Render Header User Profile info
             document.getElementById("header-username").innerText = currentUser.username;
-            document.getElementById("header-role").innerText = currentUser.isStaff ? "Administrador" : "Estudiante Aprobado";
+            document.getElementById("header-role").innerText = currentUser.is_staff ? "Administrador" : "Estudiante Aprobado";
             document.getElementById("dashboard-title").innerText = `Hola, ${currentUser.username}`;
 
             // Render view depending on role
@@ -168,7 +168,7 @@
         });
 
         function renderDashboard() {
-            if (currentUser.isStaff) {
+            if (currentUser.is_staff) {
                 document.getElementById("admin-dashboard").style.display = "grid";
                 renderAdminUsers();
                 renderAdminCourses();
