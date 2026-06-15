@@ -372,6 +372,7 @@ main {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
+    gap: 16px;
 }
 
 .admin-course-item {
@@ -387,11 +388,13 @@ main {
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 16px;
+    gap: 16px;
 }
 
 .admin-course-actions {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .admin-modules-container {
@@ -414,6 +417,7 @@ main {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
 }
 
 .admin-videos-list {
@@ -432,6 +436,17 @@ main {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.admin-video-item span {
+    min-width: 0;
+}
+
+.admin-video-item span span {
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 /* Modals */
@@ -456,6 +471,13 @@ main {
     padding: 32px;
     position: relative;
     animation: modalSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#video-modal .modal-content {
+    max-width: 720px;
+    width: min(720px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    overflow: auto;
 }
 
 @keyframes modalSlide {
@@ -682,4 +704,111 @@ main {
 
 .pending-card p {
     margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+    main {
+        padding: 24px 16px;
+    }
+
+    .nav-container {
+        padding: 14px 16px;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .nav-user {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .user-info {
+        text-align: left;
+    }
+
+    .admin-header-actions,
+    .admin-course-header,
+    .admin-module-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-course-actions,
+    .admin-module-header > div,
+    .admin-header-actions > button {
+        width: 100%;
+    }
+
+    .admin-course-actions .btn,
+    .admin-module-header .btn,
+    .admin-header-actions .btn {
+        width: 100%;
+    }
+
+    .admin-video-item {
+        align-items: flex-start;
+    }
+
+    .admin-video-item > div {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .course-card-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .course-card-footer .btn {
+        width: 100%;
+    }
+
+    .modal {
+        padding: 12px;
+    }
+
+    .modal-content {
+        max-width: none;
+        width: 100%;
+        padding: 24px;
+    }
+
+    #video-modal .modal-content {
+        width: 100%;
+        max-height: calc(100vh - 24px);
+    }
+
+    .form-control {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-card,
+    .modal-content,
+    .pending-card,
+    .admin-sidebar-panel,
+    .admin-main-panel {
+        padding: 20px;
+    }
+
+    .courses-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    .nav-brand {
+        font-size: 1.2rem;
+    }
+
+    .dashboard-title,
+    #course-title {
+        font-size: 1.6rem !important;
+    }
 }
