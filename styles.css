@@ -596,17 +596,17 @@ main {
     padding: 24px;
     text-align: center;
 }
+    min-width: 0;
 
 .video-no-content svg {
     margin-bottom: 12px;
 }
 
 .sidebar-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    height: auto;
+    min-height: clamp(220px, 48vw, 560px);
 .sidebar-title {
     font-size: 1.25rem;
     margin-bottom: 8px;
@@ -627,6 +627,7 @@ main {
     font-weight: 600;
     font-size: 0.95rem;
     cursor: pointer;
+    min-width: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;

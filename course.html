@@ -77,6 +77,8 @@
         let currentCourse = null;
         let activeVideoId = null;
 
+        let currentVideoId = null;
+        let resizeTimeoutId = null;
         document.addEventListener("DOMContentLoaded", async () => {
             if (!currentUser) return;
 
@@ -116,9 +118,12 @@
                 await autoPlayFirstVideo();
             }
         });
+            window.addEventListener("resize", handleViewportChange);
+            window.addEventListener("orientationchange", handleViewportChange);
 
         async function renderModulesAccordion() {
             const modules = (await DB.getModules())
+            currentVideoId = id;
                 .filter(m => m.course_id === currentCourse.id)
                 .sort((a, b) => a.order - b.order);
 
@@ -164,6 +169,19 @@
             const content = button.nextElementSibling;
             const icon = button.querySelector("svg");
 
+        function handleViewportChange() {
+            window.clearTimeout(resizeTimeoutId);
+            resizeTimeoutId = window.setTimeout(() => {
+                const player = document.getElementById("video-player");
+                if (!player || !currentVideoId) return;
+
+                const currentSrc = player.src;
+                player.src = "";
+                requestAnimationFrame(() => {
+                    player.src = currentSrc;
+                });
+            }, 150);
+        }
             content.classList.toggle("open");
             
             if (content.classList.contains("open")) {
