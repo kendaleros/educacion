@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Curso Manager</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <script src="supabase.js"></script>
     <script src="app.js"></script>
     <script src="auth.js"></script>
 </head>
@@ -150,7 +152,6 @@
             </form>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
     <script>
         // Check authentication and get current user
         const currentUser = AUTH.checkAuth();
@@ -160,21 +161,21 @@
 
             // Render Header User Profile info
             document.getElementById("header-username").innerText = currentUser.username;
-            document.getElementById("header-role").innerText = currentUser.isStaff ? "Administrador" : "Estudiante Aprobado";
+            document.getElementById("header-role").innerText = currentUser.is_staff ? "Administrador" : "Estudiante Aprobado";
             document.getElementById("dashboard-title").innerText = `Hola, ${currentUser.username}`;
 
             // Render view depending on role
             renderDashboard();
         });
 
-        function renderDashboard() {
-            if (currentUser.isStaff) {
+        async function renderDashboard() {
+            if (currentUser.is_staff) {
                 document.getElementById("admin-dashboard").style.display = "grid";
-                renderAdminUsers();
-                renderAdminCourses();
+                await renderAdminUsers();
+                await renderAdminCourses();
             } else {
                 document.getElementById("student-dashboard").style.display = "block";
-                renderStudentCourses();
+                await renderStudentCourses();
             }
         }
 
@@ -191,8 +192,8 @@
         }
 
         // ================= STUDENT RENDER =================
-        function renderStudentCourses() {
-            const courses = DB.getCourses();
+        async function renderStudentCourses() {
+            const courses = await DB.getCourses();
             const grid = document.getElementById("student-courses-grid");
             
             if (courses.length === 0) {
@@ -200,10 +201,12 @@
                 return;
             }
 
+            const allModules = await DB.getModules();
+            const allVideos = await DB.getVideos();
+
             grid.innerHTML = courses.map(course => {
-                const modules = DB.getModules().filter(m => m.courseId === course.id);
-                const videos = DB.getVideos();
-                const totalVideos = videos.filter(v => modules.some(m => m.id === v.moduleId)).length;
+                const modules = allModules.filter(m => m.course_id === course.id);
+                const totalVideos = allVideos.filter(v => modules.some(m => m.id === v.module_id)).length;
 
                 return `
                     <div class="glass-card course-card">
@@ -219,13 +222,13 @@
         }
 
         // ================= ADMIN USERS RENDER =================
-        function renderAdminUsers() {
-            const users = DB.getUsers().filter(u => !u.isStaff);
+        async function renderAdminUsers() {
+            const users = (await DB.getUsers()).filter(u => !u.is_staff);
             const pendingList = document.getElementById("pending-users-list");
             const activeList = document.getElementById("active-users-list");
 
-            const pending = users.filter(u => !u.isValidated);
-            const active = users.filter(u => u.isValidated);
+            const pending = users.filter(u => !u.is_validated);
+            const active = users.filter(u => u.is_validated);
 
             pendingList.innerHTML = pending.length === 0 
                 ? `<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 12px;">Ninguno pendiente</p>`
@@ -252,25 +255,25 @@
                 `).join("");
         }
 
-        function approveUser(id) {
-            if (DB.approveUser(id)) {
+        async function approveUser(id) {
+            if (await DB.approveUser(id)) {
                 showAlert("success", "El usuario ha sido aprobado con éxito.");
-                renderAdminUsers();
+                await renderAdminUsers();
             }
         }
 
-        function suspendUser(id) {
+        async function suspendUser(id) {
             if (confirm("¿Estás seguro de que deseas suspender el acceso de este estudiante?")) {
-                if (DB.suspendUser(id)) {
+                if (await DB.suspendUser(id)) {
                     showAlert("warning", "El usuario ha sido suspendido.");
-                    renderAdminUsers();
+                    await renderAdminUsers();
                 }
             }
         }
 
         // ================= ADMIN COURSES RENDER =================
-        function renderAdminCourses() {
-            const courses = DB.getCourses();
+        async function renderAdminCourses() {
+            const courses = await DB.getCourses();
             const container = document.getElementById("admin-courses-container");
 
             if (courses.length === 0) {
@@ -278,21 +281,24 @@
                 return;
             }
 
+            const allModules = await DB.getModules();
+            const allVideos = await DB.getVideos();
+
             container.innerHTML = courses.map(course => {
-                const modules = DB.getModules()
-                    .filter(m => m.courseId === course.id)
+                const modules = allModules
+                    .filter(m => m.course_id === course.id)
                     .sort((a, b) => a.order - b.order);
 
                 const modulesHtml = modules.map(mod => {
-                    const videos = DB.getVideos()
-                        .filter(v => v.moduleId === mod.id)
+                    const videos = allVideos
+                        .filter(v => v.module_id === mod.id)
                         .sort((a, b) => a.order - b.order);
 
                     const videosHtml = videos.map(vid => `
                         <div class="admin-video-item">
                             <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">
                                 🎥 [${vid.order}] ${escapeHTML(vid.title)} 
-                                <span style="font-size: 0.75rem; opacity: 0.7; font-weight: 400; margin-left: 8px;">(${escapeHTML(vid.videoUrl)})</span>
+                                <span style="font-size: 0.75rem; opacity: 0.7; font-weight: 400; margin-left: 8px;">(${escapeHTML(vid.video_url)})</span>
                             </span>
                             <div style="display: flex; gap: 4px;">
                                 <button class="btn btn-secondary btn-small" style="padding: 2px 6px;" onclick="openVideoModal(${mod.id}, ${vid.id})">Editar</button>
@@ -343,12 +349,12 @@
         // ================= CRUD ACTION HANDLERS =================
 
         // Course CRUD
-        function openCourseModal(id = null) {
+        async function openCourseModal(id = null) {
             const modal = document.getElementById("course-modal");
             const titleEl = document.getElementById("course-modal-title");
             
             if (id) {
-                const course = DB.getCourses().find(c => c.id === id);
+                const course = (await DB.getCourses()).find(c => c.id === id);
                 document.getElementById("course-id").value = course.id;
                 document.getElementById("course-title").value = course.title;
                 document.getElementById("course-desc").value = course.description;
@@ -362,39 +368,39 @@
             modal.style.display = "flex";
         }
 
-        function handleCourseSubmit(e) {
+        async function handleCourseSubmit(e) {
             e.preventDefault();
             const id = document.getElementById("course-id").value;
             const title = document.getElementById("course-title").value.trim();
             const desc = document.getElementById("course-desc").value.trim();
 
             if (id) {
-                DB.updateCourse(parseInt(id), title, desc);
+                await DB.updateCourse(parseInt(id), title, desc);
                 showAlert("success", "El curso ha sido actualizado.");
             } else {
-                DB.createCourse(title, desc);
+                await DB.createCourse(title, desc);
                 showAlert("success", "El curso ha sido creado con éxito.");
             }
             closeModal('course-modal');
-            renderAdminCourses();
+            await renderAdminCourses();
         }
 
-        function deleteCourse(id) {
+        async function deleteCourse(id) {
             if (confirm("¿Estás seguro de que deseas eliminar este curso? Se borrarán todos sus módulos y videos de forma definitiva.")) {
-                DB.deleteCourse(id);
+                await DB.deleteCourse(id);
                 showAlert("danger", "Curso eliminado.");
-                renderAdminCourses();
+                await renderAdminCourses();
             }
         }
 
         // Module CRUD
-        function openModuleModal(courseId, id = null) {
+        async function openModuleModal(courseId, id = null) {
             const modal = document.getElementById("module-modal");
             const titleEl = document.getElementById("module-modal-title");
             document.getElementById("module-course-id").value = courseId;
             
             if (id) {
-                const mod = DB.getModules().find(m => m.id === id);
+                const mod = (await DB.getModules()).find(m => m.id === id);
                 document.getElementById("module-id").value = mod.id;
                 document.getElementById("module-title").value = mod.title;
                 document.getElementById("module-desc").value = mod.description;
@@ -406,14 +412,14 @@
                 document.getElementById("module-desc").value = "";
                 
                 // Set default order as length + 1
-                const count = DB.getModules().filter(m => m.courseId === courseId).length;
+                const count = (await DB.getModules()).filter(m => m.course_id === courseId).length;
                 document.getElementById("module-order").value = count + 1;
                 titleEl.innerText = "Agregar Módulo";
             }
             modal.style.display = "flex";
         }
 
-        function handleModuleSubmit(e) {
+        async function handleModuleSubmit(e) {
             e.preventDefault();
             const courseId = parseInt(document.getElementById("module-course-id").value);
             const id = document.getElementById("module-id").value;
@@ -422,35 +428,35 @@
             const order = document.getElementById("module-order").value;
 
             if (id) {
-                DB.updateModule(parseInt(id), title, desc, order);
+                await DB.updateModule(parseInt(id), title, desc, order);
                 showAlert("success", "El módulo ha sido actualizado.");
             } else {
-                DB.createModule(courseId, title, desc, order);
+                await DB.createModule(courseId, title, desc, order);
                 showAlert("success", "Módulo agregado al curso.");
             }
             closeModal('module-modal');
-            renderAdminCourses();
+            await renderAdminCourses();
         }
 
-        function deleteModule(id) {
+        async function deleteModule(id) {
             if (confirm("¿Estás seguro de borrar este módulo y todos sus videos asociados?")) {
-                DB.deleteModule(id);
+                await DB.deleteModule(id);
                 showAlert("danger", "Módulo eliminado.");
-                renderAdminCourses();
+                await renderAdminCourses();
             }
         }
 
         // Video CRUD
-        function openVideoModal(moduleId, id = null) {
+        async function openVideoModal(moduleId, id = null) {
             const modal = document.getElementById("video-modal");
             const titleEl = document.getElementById("video-modal-title");
             document.getElementById("video-module-id").value = moduleId;
 
             if (id) {
-                const vid = DB.getVideos().find(v => v.id === id);
+                const vid = (await DB.getVideos()).find(v => v.id === id);
                 document.getElementById("video-id").value = vid.id;
                 document.getElementById("video-title").value = vid.title;
-                document.getElementById("video-url").value = vid.videoUrl;
+                document.getElementById("video-url").value = vid.video_url;
                 document.getElementById("video-desc").value = vid.description;
                 document.getElementById("video-order").value = vid.order;
                 titleEl.innerText = "Editar Video";
@@ -461,14 +467,14 @@
                 document.getElementById("video-desc").value = "";
                 
                 // Set default order
-                const count = DB.getVideos().filter(v => v.moduleId === moduleId).length;
+                const count = (await DB.getVideos()).filter(v => v.module_id === moduleId).length;
                 document.getElementById("video-order").value = count + 1;
                 titleEl.innerText = "Agregar Video";
             }
             modal.style.display = "flex";
         }
 
-        function handleVideoSubmit(e) {
+        async function handleVideoSubmit(e) {
             e.preventDefault();
             const moduleId = parseInt(document.getElementById("video-module-id").value);
             const id = document.getElementById("video-id").value;
@@ -478,21 +484,21 @@
             const order = document.getElementById("video-order").value;
 
             if (id) {
-                DB.updateVideo(parseInt(id), title, url, desc, order);
+                await DB.updateVideo(parseInt(id), title, url, desc, order);
                 showAlert("success", "El video ha sido actualizado.");
             } else {
-                DB.createVideo(moduleId, title, url, desc, order);
+                await DB.createVideo(moduleId, title, url, desc, order);
                 showAlert("success", "Video agregado al módulo.");
             }
             closeModal('video-modal');
-            renderAdminCourses();
+            await renderAdminCourses();
         }
 
-        function deleteVideo(id) {
+        async function deleteVideo(id) {
             if (confirm("¿Estás seguro de borrar este video?")) {
-                DB.deleteVideo(id);
+                await DB.deleteVideo(id);
                 showAlert("danger", "Video eliminado.");
-                renderAdminCourses();
+                await renderAdminCourses();
             }
         }
 
