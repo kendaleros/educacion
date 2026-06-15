@@ -77,16 +77,12 @@
         let currentCourse = null;
         let activeVideoId = null;
 
-        let currentVideoId = null;
-        let resizeTimeoutId = null;
         document.addEventListener("DOMContentLoaded", async () => {
             if (!currentUser) return;
 
-            // Render user header profiles
             document.getElementById("header-username").innerText = currentUser.username;
             document.getElementById("header-role").innerText = currentUser.is_staff ? "Administrador" : "Estudiante";
 
-            // Load course details
             const urlParams = new URLSearchParams(window.location.search);
             const courseId = parseInt(urlParams.get("id"));
 
@@ -95,35 +91,29 @@
                 return;
             }
 
-            currentCourse = (await DB.getCourses()).find(c => c.id === courseId);
+            const courses = await DB.getCourses();
+            currentCourse = courses.find(c => c.id === courseId);
             if (!currentCourse) {
                 window.location.href = "dashboard.html";
                 return;
             }
 
-            // Render course title and description
             document.getElementById("course-title").innerText = currentCourse.title;
             document.getElementById("course-desc").innerText = currentCourse.description;
             document.title = `${currentCourse.title} - SAN MARCOS`;
 
-            // Render modules and videos accordion sidebar
             await renderModulesAccordion();
 
-            // Set up video url parameter if provided
             const videoId = parseInt(urlParams.get("video"));
             if (videoId) {
                 await playVideo(videoId);
             } else {
-                // Auto play first video of first module
                 await autoPlayFirstVideo();
             }
         });
-            window.addEventListener("resize", handleViewportChange);
-            window.addEventListener("orientationchange", handleViewportChange);
 
         async function renderModulesAccordion() {
             const modules = (await DB.getModules())
-            currentVideoId = id;
                 .filter(m => m.course_id === currentCourse.id)
                 .sort((a, b) => a.order - b.order);
 
@@ -136,7 +126,7 @@
 
             const allVideos = await DB.getVideos();
 
-            container.innerHTML = modules.map((mod, index) => {
+            container.innerHTML = modules.map(mod => {
                 const videos = allVideos
                     .filter(v => v.module_id === mod.id)
                     .sort((a, b) => a.order - b.order);
@@ -150,11 +140,11 @@
 
                 return `
                     <div class="accordion-item">
-                        <button class="accordion-header" onclick="toggleAccordion('content-${mod.id}', this)">
+                        <button class="accordion-header" onclick="toggleAccordion(this)">
                             <span>${escapeHTML(mod.title)}</span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(0deg); transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
                         </button>
-                        <div id="content-mod-${mod.id}" class="accordion-content">
+                        <div class="accordion-content">
                             <ul class="playlist-videos">
                                 ${videosHtml || '<li class="playlist-video-item" style="cursor: default; pointer-events: none; font-style: italic;">Sin lecciones en este módulo</li>'}
                             </ul>
@@ -164,48 +154,25 @@
             }).join("");
         }
 
-        function toggleAccordion(contentId, button) {
-            // Find accordion content by selecting the div next to header button
+        function toggleAccordion(button) {
             const content = button.nextElementSibling;
             const icon = button.querySelector("svg");
 
-        function handleViewportChange() {
-            window.clearTimeout(resizeTimeoutId);
-            resizeTimeoutId = window.setTimeout(() => {
-                const player = document.getElementById("video-player");
-                if (!player || !currentVideoId) return;
-
-                const currentSrc = player.src;
-                player.src = "";
-                requestAnimationFrame(() => {
-                    player.src = currentSrc;
-                });
-            }, 150);
-        }
             content.classList.toggle("open");
-            
-            if (content.classList.contains("open")) {
-                icon.style.transform = "rotate(180deg)";
-            } else {
-                icon.style.transform = "rotate(0deg)";
-            }
+            icon.style.transform = content.classList.contains("open") ? "rotate(180deg)" : "rotate(0deg)";
         }
 
         async function playVideo(id) {
-            const video = (await DB.getVideos()).find(v => v.id === id);
+            const videos = await DB.getVideos();
+            const video = videos.find(v => v.id === id);
             if (!video) return;
 
-            // Remove active classes
-            document.querySelectorAll(".playlist-video-item").forEach(item => {
-                item.classList.remove("active");
-            });
+            document.querySelectorAll(".playlist-video-item").forEach(item => item.classList.remove("active"));
 
-            // Add active class
             const activeItem = document.getElementById(`video-item-${id}`);
             if (activeItem) {
                 activeItem.classList.add("active");
-                
-                // Automatically open its parent accordion if closed
+
                 const contentDiv = activeItem.closest(".accordion-content");
                 if (contentDiv && !contentDiv.classList.contains("open")) {
                     contentDiv.classList.add("open");
@@ -219,7 +186,6 @@
 
             activeVideoId = id;
 
-            // Render player elements
             const player = document.getElementById("video-player");
             const placeholder = document.getElementById("player-placeholder");
             const details = document.getElementById("active-video-details");
@@ -232,9 +198,8 @@
             document.getElementById("active-video-title").innerText = video.title;
             document.getElementById("active-video-desc").innerText = video.description || "Esta lección no tiene descripción adicional.";
 
-            // Update URL parameter without reloading page
             const newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + `?id=${currentCourse.id}&video=${id}`;
-            window.history.replaceState({path:newurl}, '', newurl);
+            window.history.replaceState({ path: newurl }, '', newurl);
         }
 
         async function autoPlayFirstVideo() {
@@ -242,33 +207,31 @@
                 .filter(m => m.course_id === currentCourse.id)
                 .sort((a, b) => a.order - b.order);
 
-            if (modules.length > 0) {
-                const allVideos = await DB.getVideos();
-                // Find first video
-                for (const mod of modules) {
-                    const videos = allVideos
-                        .filter(v => v.module_id === mod.id)
-                        .sort((a, b) => a.order - b.order);
-                    
-                    if (videos.length > 0) {
-                        await playVideo(videos[0].id);
-                        break;
-                    }
+            if (modules.length === 0) return;
+
+            const allVideos = await DB.getVideos();
+
+            for (const mod of modules) {
+                const videos = allVideos
+                    .filter(v => v.module_id === mod.id)
+                    .sort((a, b) => a.order - b.order);
+
+                if (videos.length > 0) {
+                    await playVideo(videos[0].id);
+                    break;
                 }
             }
         }
 
         function escapeHTML(str) {
             if (!str) return '';
-            return str.replace(/[&<>'"]/g, 
-                tag => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#39;',
-                    '"': '&quot;'
-                }[tag] || tag)
-            );
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag));
         }
     </script>
 </body>
