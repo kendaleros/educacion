@@ -1,21 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --bg-color: #080c14;
-    --card-bg: rgba(15, 23, 42, 0.65);
-    --card-border: rgba(255, 255, 255, 0.06);
-    --primary: #6366f1;
-    --primary-glow: rgba(99, 102, 241, 0.35);
-    --primary-hover: #4f46e5;
-    --accent: #8b5cf6;
-    --accent-glow: rgba(139, 92, 246, 0.25);
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
+    --bg-color: #f4f9fc;
+    --card-bg: rgba(255, 255, 255, 0.82);
+    --card-border: rgba(11, 77, 125, 0.14);
+    --primary: #0b4d7d;
+    --primary-glow: rgba(11, 77, 125, 0.22);
+    --primary-hover: #08365a;
+    --accent: #58a8d8;
+    --accent-glow: rgba(88, 168, 216, 0.22);
+    --text-main: #08365a;
+    --text-muted: #5d7c92;
+    --success: #2b7fb8;
+    --warning: #7aaed1;
+    --danger: #b85d6d;
     --glass-blur: blur(12px);
-    --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+    --shadow: 0 14px 35px -18px rgba(11, 77, 125, 0.35);
     --radius: 16px;
     --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -38,11 +38,11 @@
     background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(11, 77, 125, 0.28);
     border-radius: 10px;
 }
 *::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(11, 77, 125, 0.42);
 }
 
 body {
@@ -53,8 +53,8 @@ body {
     flex-direction: column;
     overflow-x: hidden;
     background-image: 
-        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+        radial-gradient(circle at 10% 20%, rgba(88, 168, 216, 0.22) 0%, transparent 38%),
+        radial-gradient(circle at 90% 80%, rgba(11, 77, 125, 0.12) 0%, transparent 42%);
     background-attachment: fixed;
 }
 
@@ -129,7 +129,7 @@ p {
 
 .form-control {
     width: 100%;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.92);
     border: 1px solid var(--card-border);
     padding: 12px 16px;
     border-radius: 12px;
@@ -141,7 +141,7 @@ p {
 .form-control:focus {
     outline: none;
     border-color: var(--primary);
-    background: rgba(255, 255, 255, 0.05);
+    background: #ffffff;
     box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
@@ -172,13 +172,13 @@ p {
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(11, 77, 125, 0.08);
     border: 1px solid var(--card-border);
     color: var(--text-main);
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(11, 77, 125, 0.12);
 }
 
 .btn-danger {
@@ -219,7 +219,7 @@ p {
 
 /* Header / Navigation */
 header {
-    background: rgba(8, 12, 20, 0.7);
+    background: rgba(244, 249, 252, 0.82);
     backdrop-filter: var(--glass-blur);
     border-bottom: 1px solid var(--card-border);
     position: sticky;
@@ -297,8 +297,8 @@ main {
 
 .course-card:hover {
     transform: translateY(-4px);
-    border-color: rgba(99, 102, 241, 0.25);
-    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.05);
+    border-color: rgba(11, 77, 125, 0.3);
+    box-shadow: 0 10px 30px rgba(11, 77, 125, 0.12);
 }
 
 .course-card-title {
@@ -345,7 +345,7 @@ main {
 }
 
 .admin-user-item {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.9);
     border: 1px solid var(--card-border);
     border-radius: 12px;
     padding: 16px;
@@ -375,7 +375,7 @@ main {
 }
 
 .admin-course-item {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.9);
     border: 1px solid var(--card-border);
     border-radius: 16px;
     padding: 24px;
@@ -397,15 +397,15 @@ main {
 .admin-modules-container {
     margin-top: 16px;
     padding-left: 16px;
-    border-left: 2px solid rgba(255, 255, 255, 0.05);
+    border-left: 2px solid rgba(11, 77, 125, 0.12);
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
 .admin-module-item {
-    background: rgba(255, 255, 255, 0.01);
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    background: rgba(244, 249, 252, 0.95);
+    border: 1px solid rgba(11, 77, 125, 0.08);
     border-radius: 12px;
     padding: 16px;
 }
@@ -425,8 +425,8 @@ main {
 }
 
 .admin-video-item {
-    background: rgba(255, 255, 255, 0.005);
-    border: 1px dashed rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px dashed rgba(11, 77, 125, 0.14);
     border-radius: 8px;
     padding: 8px 12px;
     display: flex;
@@ -441,7 +441,7 @@ main {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(8, 54, 90, 0.18);
     backdrop-filter: blur(4px);
     display: none;
     justify-content: center;
@@ -504,20 +504,20 @@ main {
 }
 
 .alert-success {
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    background: rgba(43, 127, 184, 0.1);
+    border: 1px solid rgba(43, 127, 184, 0.2);
     color: var(--success);
 }
 
 .alert-warning {
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.2);
+    background: rgba(122, 174, 209, 0.12);
+    border: 1px solid rgba(122, 174, 209, 0.22);
     color: var(--warning);
 }
 
 .alert-danger {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: rgba(184, 93, 109, 0.1);
+    border: 1px solid rgba(184, 93, 109, 0.2);
     color: var(--danger);
 }
 
@@ -548,7 +548,7 @@ main {
     border-radius: 16px;
     box-shadow: var(--shadow);
     border: 1px solid var(--card-border);
-    background: #000;
+    background: #ffffff;
 }
 
 .video-wrapper iframe {
@@ -619,7 +619,7 @@ main {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.72);
 }
 
 .accordion-content.open {
@@ -643,12 +643,12 @@ main {
 }
 
 .playlist-video-item:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(88, 168, 216, 0.1);
     color: var(--text-main);
 }
 
 .playlist-video-item.active {
-    background: rgba(99, 102, 241, 0.08);
+    background: rgba(11, 77, 125, 0.1);
     color: var(--primary);
     font-weight: 600;
     border-left: 3px solid var(--primary);
