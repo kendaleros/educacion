@@ -674,6 +674,34 @@ main {
     box-shadow: 0 8px 20px rgba(11, 77, 125, 0.06);
 }
 
+.playlist-thumb {
+    width: 160px;
+    height: 90px;
+    border-radius: 10px;
+    background: #000;
+    flex-shrink: 0;
+    box-shadow: 0 6px 18px rgba(11,77,125,0.08);
+}
+
+.playlist-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.playlist-title {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.playlist-sub {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    max-height: 2.6em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .playlist-video-item svg {
     width: 32px;
     height: 32px;
@@ -787,6 +815,30 @@ main {
 
     .sidebar-container .glass-card {
         padding: 18px !important;
+
+    /* YouTube-like visual tweaks */
+    .video-container {
+        border-radius: 12px;
+        background: #000;
+    }
+
+    .video-container .video-no-content {
+        background: transparent;
+        color: rgba(255,255,255,0.9);
+    }
+
+    .course-meta {
+        padding-top: 18px;
+    }
+
+    @media (max-width: 768px) {
+        .playlist-thumb { width: 120px; height: 68px; }
+    }
+
+    @media (max-width: 480px) {
+        .playlist-thumb { width: 100px; height: 56px; }
+        .playlist-video-item { grid-template-columns: auto 1fr; gap: 12px; padding: 12px; }
+    }
     }
 
     .video-container {
