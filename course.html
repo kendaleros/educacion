@@ -43,20 +43,23 @@
                     <!-- Video player element or placeholder -->
                     <div id="player-placeholder" class="video-no-content">
                         <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
-                        <h3>Selecciona un video para comenzar a reproducir</h3>
-                        <p style="margin-top: 4px;">Utiliza la barra lateral derecha para elegir una lección.</p>
+                        <h3>Selecciona un video para comenzar</h3>
+                        <p style="margin-top: 4px;">Utiliza el panel lateral para elegir una lección.</p>
                     </div>
                     <iframe id="video-player" src="" allowfullscreen style="display: none;"></iframe>
                 </div>
 
-                <div class="course-meta">
-                    <h1 id="course-title" style="font-size: 2.2rem; margin-bottom: 8px;">Cargando Curso...</h1>
-                    <p id="course-desc" style="margin-bottom: 32px; font-size: 1rem;"></p>
+                <!-- Active Video Info (YouTube Style) -->
+                <div id="active-video-details" style="display: none;">
+                    <h1 id="active-video-title" style="font-size: 1.5rem; margin: 16px 0 12px 0; color: var(--text-main); font-weight: 700;">Título de la Lección</h1>
+                    <div class="glass-card" style="padding: 20px; background: rgba(255, 255, 255, 0.5);">
+                        <p id="active-video-desc" style="font-size: 0.95rem; white-space: pre-wrap; line-height: 1.6;"></p>
+                    </div>
                 </div>
 
-                <div id="active-video-details" class="glass-card" style="padding: 24px; display: none;">
-                    <h2 id="active-video-title" style="font-size: 1.5rem; margin-bottom: 12px;">Título de la Lección</h2>
-                    <p id="active-video-desc" style="font-size: 0.95rem;"></p>
+                <div class="course-meta" style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--card-border);">
+                    <h2 id="course-title" style="font-size: 1.1rem; margin-bottom: 8px; color: var(--text-muted); font-weight: 600;">Curso: Cargando...</h2>
+                    <p id="course-desc" style="font-size: 0.9rem;"></p>
                 </div>
             </div>
 
@@ -110,7 +113,7 @@
             if (videoId) {
                 await playVideo(videoId);
             } else {
-                await autoPlayFirstVideo();
+                await loadFirstVideo();
             }
         });
 
@@ -135,8 +138,13 @@
 
                 const videosHtml = videos.map(vid => `
                     <li id="video-item-${vid.id}" class="playlist-video-item" onclick="playVideo(${vid.id})">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
-                        <span>${escapeHTML(vid.title)}</span>
+                        <div class="playlist-thumb-mini">
+                            <img src="${getThumbnailUrl(vid.video_url)}" alt="${escapeHTML(vid.title)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                        </div>
+                        <div class="playlist-meta">
+                            <span class="playlist-title-mini">${escapeHTML(vid.title)}</span>
+                            <span class="playlist-sub-mini">Lección</span>
+                        </div>
                     </li>
                 `).join("");
 
@@ -164,7 +172,7 @@
             icon.style.transform = content.classList.contains("open") ? "rotate(180deg)" : "rotate(0deg)";
         }
 
-        async function playVideo(id) {
+        async function playVideo(id, autoStart = true) {
             const videos = await DB.getVideos();
             const video = videos.find(v => v.id === id);
             if (!video) return;
@@ -196,7 +204,12 @@
             player.style.display = "block";
             details.style.display = "block";
 
-            player.src = getEmbedUrl(video.video_url);
+            let embedUrl = getEmbedUrl(video.video_url);
+            
+            // If autoStart is false, we can try to avoid autoplay. 
+            // Most embeds don't autoplay by default unless we add &autoplay=1
+            player.src = embedUrl;
+            
             document.getElementById("active-video-title").innerText = video.title;
             document.getElementById("active-video-desc").innerText = video.description || "Esta lección no tiene descripción adicional.";
 
@@ -204,7 +217,7 @@
             window.history.replaceState({ path: newurl }, '', newurl);
         }
 
-        async function autoPlayFirstVideo() {
+        async function loadFirstVideo() {
             const modules = (await DB.getModules())
                 .filter(m => m.course_id === currentCourse.id)
                 .sort((a, b) => a.order - b.order);
@@ -219,7 +232,9 @@
                     .sort((a, b) => a.order - b.order);
 
                 if (videos.length > 0) {
-                    await playVideo(videos[0].id);
+                    // Load the first video but we don't force anything.
+                    // The playVideo function will set the src.
+                    await playVideo(videos[0].id, false);
                     break;
                 }
             }

@@ -10,6 +10,16 @@ function getEmbedUrl(url) {
     return url;
 }
 
+// Get video thumbnail URL
+function getThumbnailUrl(url) {
+    if (!url) return "https://via.placeholder.com/160x90?text=No+Video";
+    const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`;
+    const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?([0-9]+)/);
+    if (vimeoMatch) return `https://vumbnail.com/${vimeoMatch[1]}.jpg`;
+    return "https://via.placeholder.com/160x90?text=Video";
+}
+
 // Database Operations using Supabase
 const DB = {
     // --- Users ---
