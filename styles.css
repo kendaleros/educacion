@@ -861,4 +861,8 @@ main {
     #course-desc {
         margin-bottom: 20px !important;
     }
+
+    .course-meta {
+        padding: 0;
+    }
 }
