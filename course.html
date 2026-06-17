@@ -6,6 +6,7 @@
     <title>SAN MARCOS</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <script src="https://player.vimeo.com/api/player.js"></script>
     <script src="supabase.js"></script>
     <script src="app.js"></script>
     <script src="auth.js"></script>
@@ -29,13 +30,6 @@
 
     <!-- Main visualizer layout -->
     <main>
-        <div style="margin-bottom: 24px;">
-            <a href="dashboard.html" style="color: var(--primary); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-                Volver al Dashboard
-            </a>
-        </div>
-
         <div class="course-viewer-grid">
             <!-- Left Side: Video Player -->
             <div class="player-container">
@@ -46,12 +40,21 @@
                         <h3>Selecciona un video para comenzar</h3>
                         <p style="margin-top: 4px;">Utiliza el panel lateral para elegir una lección.</p>
                     </div>
-                    <iframe id="video-player" src="" allowfullscreen style="display: none;"></iframe>
+                    <video id="native-video-player" controls playsinline preload="metadata" style="display: none;"></video>
+                    <iframe id="video-player" src="" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="display: none;"></iframe>
                 </div>
 
                 <!-- Active Video Info (YouTube Style) -->
                 <div id="active-video-details" style="display: none;">
-                    <h1 id="active-video-title" style="font-size: 1.5rem; margin: 16px 0 12px 0; color: var(--text-main); font-weight: 700;">Título de la Lección</h1>
+                    <h1 id="active-video-title" style="font-size: 1.5rem; margin: 16px 0 8px 0; color: var(--text-main); font-weight: 700;">Título de la Lección</h1>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <a href="dashboard.html" style="color: var(--primary); text-decoration: none; font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                            Volver al Dashboard
+                        </a>
+                    </div>
+
                     <div class="glass-card" style="padding: 20px; background: rgba(255, 255, 255, 0.5);">
                         <p id="active-video-desc" style="font-size: 0.95rem; white-space: pre-wrap; line-height: 1.6;"></p>
                     </div>
@@ -86,7 +89,14 @@
             if (!currentUser) return;
 
             document.getElementById("header-username").innerText = currentUser.username;
-            document.getElementById("header-role").innerText = currentUser.is_staff ? "Administrador" : "Estudiante";
+            const roleEl = document.getElementById("header-role");
+            if (currentUser.is_staff) {
+                roleEl.innerText = "Administrador";
+                roleEl.className = "user-role admin";
+            } else {
+                roleEl.innerText = "Estudiante";
+                roleEl.className = "user-role student";
+            }
 
             const urlParams = new URLSearchParams(window.location.search);
             const courseId = parseInt(urlParams.get("id"));
@@ -139,7 +149,7 @@
                 const videosHtml = videos.map(vid => `
                     <li id="video-item-${vid.id}" class="playlist-video-item" onclick="playVideo(${vid.id})">
                         <div class="playlist-thumb-mini">
-                            <img src="${getThumbnailUrl(vid.video_url)}" alt="${escapeHTML(vid.title)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                            <img src="${getThumbnailUrl(vid.video_url)}" alt="${escapeHTML(vid.title)}" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                         <div class="playlist-meta">
                             <span class="playlist-title-mini">${escapeHTML(vid.title)}</span>
@@ -197,18 +207,61 @@
             activeVideoId = id;
 
             const player = document.getElementById("video-player");
+            const nativePlayer = document.getElementById("native-video-player");
             const placeholder = document.getElementById("player-placeholder");
             const details = document.getElementById("active-video-details");
+            const videoContainer = player.closest(".video-container");
 
             placeholder.style.display = "none";
-            player.style.display = "block";
             details.style.display = "block";
 
-            let embedUrl = getEmbedUrl(video.video_url);
-            
-            // If autoStart is false, we can try to avoid autoplay. 
-            // Most embeds don't autoplay by default unless we add &autoplay=1
-            player.src = embedUrl;
+            let embedUrl = getEmbedUrl(video.video_url, { autoplay: autoStart });
+            const provider = getVideoProvider(video.video_url);
+
+            if (videoContainer) {
+                videoContainer.classList.remove("video-provider-youtube", "video-provider-vimeo", "video-provider-drive", "video-provider-odysee", "video-provider-generic", "video-mode-native", "video-mode-embed");
+                videoContainer.classList.add(`video-provider-${provider}`);
+            }
+
+            player.style.display = "none";
+            player.src = "";
+            nativePlayer.pause();
+            nativePlayer.removeAttribute("src");
+            nativePlayer.style.display = "none";
+            nativePlayer.onerror = null;
+
+            if (provider === "drive") {
+                const directUrl = getGoogleDriveDirectUrl(video.video_url);
+                if (directUrl) {
+                    if (videoContainer) videoContainer.classList.add("video-mode-native");
+                    nativePlayer.src = directUrl;
+                    nativePlayer.style.display = "block";
+                    nativePlayer.load();
+
+                    nativePlayer.onerror = () => {
+                        if (videoContainer) {
+                            videoContainer.classList.remove("video-mode-native");
+                            videoContainer.classList.add("video-mode-embed");
+                        }
+                        nativePlayer.style.display = "none";
+                        nativePlayer.removeAttribute("src");
+                        player.src = embedUrl;
+                        player.style.display = "block";
+                    };
+
+                    if (autoStart) {
+                        nativePlayer.play().catch(() => {});
+                    }
+                } else {
+                    if (videoContainer) videoContainer.classList.add("video-mode-embed");
+                    player.src = embedUrl;
+                    player.style.display = "block";
+                }
+            } else {
+                if (videoContainer) videoContainer.classList.add("video-mode-embed");
+                player.src = embedUrl;
+                player.style.display = "block";
+            }
             
             document.getElementById("active-video-title").innerText = video.title;
             document.getElementById("active-video-desc").innerText = video.description || "Esta lección no tiene descripción adicional.";
@@ -232,9 +285,7 @@
                     .sort((a, b) => a.order - b.order);
 
                 if (videos.length > 0) {
-                    // Load the first video but we don't force anything.
-                    // The playVideo function will set the src.
-                    await playVideo(videos[0].id, false);
+                    await playVideo(videos[0].id, true);
                     break;
                 }
             }

@@ -5,26 +5,46 @@ const AUTH = {
     getCurrentUser: () => {
         const session = sessionStorage.getItem("currentUser");
         if (!session) return null;
-        return JSON.parse(session);
+        try {
+            return JSON.parse(session);
+        } catch (err) {
+            console.error("Stored session is invalid:", err);
+            sessionStorage.removeItem("currentUser");
+            return null;
+        }
     },
 
     // Login process using Supabase
     login: async (username, password) => {
         try {
-            // Buscar usuario por username o email en Supabase
-            let { data: users, error } = await supabase
+            const identifier = username.trim();
+
+            // Buscar usuario por username.
+            let { data: user, error } = await supabase
                 .from('users')
                 .select('*')
-                .or(`username.eq.${username},email.eq.${username}`)
-                .eq('password', password);
+                .eq('username', identifier)
+                .eq('password', password)
+                .maybeSingle();
 
             if (error) throw error;
 
-            if (!users || users.length === 0) {
-                return { success: false, message: "Nombre de usuario o contraseña incorrectos." };
+            // Si no existe, buscar por email. Evita errores de sintaxis en filtros OR con correos especiales.
+            if (!user) {
+                const emailResult = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', identifier)
+                    .eq('password', password)
+                    .maybeSingle();
+
+                if (emailResult.error) throw emailResult.error;
+                user = emailResult.data;
             }
 
-            const user = users[0];
+            if (!user) {
+                return { success: false, message: "Nombre de usuario o contraseña incorrectos." };
+            }
 
             if (!user.is_staff && !user.is_validated) {
                 return { success: false, pending: true, username: user.username };

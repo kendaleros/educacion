@@ -30,17 +30,15 @@
     <!-- Main Container -->
     <main>
         <div id="alert-container"></div>
-        <h1 id="dashboard-title" class="dashboard-title">Mi Dashboard</h1>
+        <h1 id="dashboard-title" class="dashboard-title">Hola,</h1>
 
-        <!-- STUDENT DASHBOARD -->
+        <!-- STUDENT DASHBOARD: display:none por defecto -->
         <div id="student-dashboard" style="display: none;">
             <p style="margin-bottom: 24px;">Selecciona uno de tus cursos activos para comenzar a aprender:</p>
-            <div id="student-courses-grid" class="courses-grid">
-                <!-- Dynamic student course cards -->
-            </div>
+            <div id="student-courses-grid" class="courses-grid"></div>
         </div>
 
-        <!-- ADMIN DASHBOARD -->
+        <!-- ADMIN DASHBOARD: display:none por defecto -->
         <div id="admin-dashboard" class="admin-grid" style="display: none;">
             <!-- Left Sidebar (Users Control) -->
             <div class="glass-card admin-sidebar-panel">
@@ -48,16 +46,12 @@
                 
                 <div>
                     <h4 style="margin-bottom: 12px; font-size: 0.9rem; text-transform: uppercase; color: var(--warning);">Pendientes de Aprobación</h4>
-                    <div id="pending-users-list" class="admin-users-list">
-                        <!-- Dynamic pending users list -->
-                    </div>
+                    <div id="pending-users-list" class="admin-users-list"></div>
                 </div>
 
                 <div>
                     <h4 style="margin-bottom: 12px; font-size: 0.9rem; text-transform: uppercase; color: var(--success);">Estudiantes Activos</h4>
-                    <div id="active-users-list" class="admin-users-list">
-                        <!-- Dynamic active users list -->
-                    </div>
+                    <div id="active-users-list" class="admin-users-list"></div>
                 </div>
             </div>
 
@@ -69,10 +63,7 @@
                         Crear Curso
                     </button>
                 </div>
-
-                <div id="admin-courses-container">
-                    <!-- Dynamic courses tree lists -->
-                </div>
+                <div id="admin-courses-container"></div>
             </div>
         </div>
     </main>
@@ -82,7 +73,7 @@
     <!-- Course Modal -->
     <div id="course-modal" class="modal">
         <div class="glass-card modal-content">
-            <button class="modal-close" onclick="closeModal('course-modal')">&times;</button>
+            <button class="modal-close" onclick="closeModal('course-modal')">×</button>
             <h3 id="course-modal-title" class="modal-title">Crear Curso</h3>
             <form onsubmit="handleCourseSubmit(event)">
                 <input type="hidden" id="course-id">
@@ -102,7 +93,7 @@
     <!-- Module Modal -->
     <div id="module-modal" class="modal">
         <div class="glass-card modal-content">
-            <button class="modal-close" onclick="closeModal('module-modal')">&times;</button>
+            <button class="modal-close" onclick="closeModal('module-modal')">×</button>
             <h3 id="module-modal-title" class="modal-title">Agregar Módulo</h3>
             <form onsubmit="handleModuleSubmit(event)">
                 <input type="hidden" id="module-id">
@@ -127,7 +118,7 @@
     <!-- Video Modal -->
     <div id="video-modal" class="modal">
         <div class="glass-card modal-content">
-            <button class="modal-close" onclick="closeModal('video-modal')">&times;</button>
+            <button class="modal-close" onclick="closeModal('video-modal')">×</button>
             <h3 id="video-modal-title" class="modal-title">Agregar Video</h3>
             <form onsubmit="handleVideoSubmit(event)">
                 <input type="hidden" id="video-id">
@@ -137,8 +128,8 @@
                     <input class="form-control" type="text" id="video-title" required placeholder="Ej: 1. Configurando el entorno">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="video-url">URL del Video (YouTube o Vimeo)</label>
-                    <input class="form-control" type="url" id="video-url" required placeholder="https://www.youtube.com/watch?v=...">
+                    <label class="form-label" for="video-url">URL o iframe del Video (YouTube, Vimeo, Google Drive u Odysee)</label>
+                    <textarea class="form-control" id="video-url" required rows="3" placeholder='https://odysee.com/$/embed/... o <iframe src="https://drive.google.com/file/d/.../preview"></iframe>'></textarea>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="video-desc">Descripción (Opcional)</label>
@@ -152,24 +143,48 @@
             </form>
         </div>
     </div>
+
     <script>
-        // Check authentication and get current user
-        const currentUser = AUTH.checkAuth();
+        let currentUser = null;
 
         document.addEventListener("DOMContentLoaded", () => {
-            if (!currentUser) return;
+            try {
+                currentUser = AUTH.checkAuth();
 
-            // Render Header User Profile info
-            document.getElementById("header-username").innerText = currentUser.username;
-            document.getElementById("header-role").innerText = currentUser.is_staff ? "Administrador" : "Estudiante Aprobado";
-            document.getElementById("dashboard-title").innerText = `Hola, ${currentUser.username}`;
+                if (!currentUser) {
+                    window.location.href = "login.html";
+                    return;
+                }
 
-            // Render view depending on role
-            renderDashboard();
+                const ES_ADMIN = currentUser.is_staff === true;
+
+                // Actualizar header
+                document.getElementById("header-username").innerText = currentUser.username;
+                document.getElementById("dashboard-title").innerText = `Hola, ${currentUser.username}`;
+
+                const roleEl = document.getElementById("header-role");
+                if (ES_ADMIN) {
+                    roleEl.innerText = "Administrador";
+                    roleEl.className = "user-role admin";
+                } else {
+                    roleEl.innerText = "Estudiante";
+                    roleEl.className = "user-role student";
+                }
+
+                // Renderizar dashboard correcto
+                renderDashboard(ES_ADMIN);
+
+            } catch (error) {
+                console.error("ERROR al cargar el dashboard:", error);
+                window.location.href = "login.html";
+            }
         });
 
-        async function renderDashboard() {
-            if (currentUser.is_staff) {
+        async function renderDashboard(esAdmin) {
+            document.getElementById("admin-dashboard").style.display = "none";
+            document.getElementById("student-dashboard").style.display = "none";
+
+            if (esAdmin) {
                 document.getElementById("admin-dashboard").style.display = "grid";
                 await renderAdminUsers();
                 await renderAdminCourses();
@@ -182,20 +197,19 @@
         function showAlert(type, message) {
             const container = document.getElementById("alert-container");
             container.innerHTML = `
-                <div class="alert alert-${type}">
+                <div class="alert-message ${type}">
                     <span>${message}</span>
+                    <button class="alert-close-btn" onclick="this.parentElement.remove()">&times;</button>
                 </div>
             `;
-            setTimeout(() => {
-                container.innerHTML = "";
-            }, 4000);
+            setTimeout(() => { container.innerHTML = ""; }, 5000);
         }
 
         // ================= STUDENT RENDER =================
         async function renderStudentCourses() {
             const courses = await DB.getCourses();
             const grid = document.getElementById("student-courses-grid");
-            
+
             if (courses.length === 0) {
                 grid.innerHTML = `<p style="grid-column: 1/-1; color: var(--text-muted); text-align: center;">No hay cursos disponibles en este momento.</p>`;
                 return;
@@ -207,7 +221,6 @@
             grid.innerHTML = courses.map(course => {
                 const modules = allModules.filter(m => m.course_id === course.id);
                 const totalVideos = allVideos.filter(v => modules.some(m => m.id === v.module_id)).length;
-
                 return `
                     <div class="glass-card course-card">
                         <h3 class="course-card-title">${escapeHTML(course.title)}</h3>
@@ -230,7 +243,7 @@
             const pending = users.filter(u => !u.is_validated);
             const active = users.filter(u => u.is_validated);
 
-            pendingList.innerHTML = pending.length === 0 
+            pendingList.innerHTML = pending.length === 0
                 ? `<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 12px;">Ninguno pendiente</p>`
                 : pending.map(u => `
                     <div class="admin-user-item">
@@ -242,7 +255,7 @@
                     </div>
                 `).join("");
 
-            activeList.innerHTML = active.length === 0 
+            activeList.innerHTML = active.length === 0
                 ? `<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 12px;">Sin estudiantes activos</p>`
                 : active.map(u => `
                     <div class="admin-user-item">
@@ -297,7 +310,7 @@
                     const videosHtml = videos.map(vid => `
                         <div class="admin-video-item">
                             <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">
-                                🎥 [${vid.order}] ${escapeHTML(vid.title)} 
+                                🎥 [${vid.order}] ${escapeHTML(vid.title)}
                                 <span style="font-size: 0.75rem; opacity: 0.7; font-weight: 400; margin-left: 8px;">(${escapeHTML(vid.video_url)})</span>
                             </span>
                             <div style="display: flex; gap: 4px;">
@@ -348,11 +361,9 @@
 
         // ================= CRUD ACTION HANDLERS =================
 
-        // Course CRUD
         async function openCourseModal(id = null) {
             const modal = document.getElementById("course-modal");
             const titleEl = document.getElementById("course-modal-title");
-            
             if (id) {
                 const course = (await DB.getCourses()).find(c => c.id === id);
                 document.getElementById("course-id").value = course.id;
@@ -373,7 +384,6 @@
             const id = document.getElementById("course-id").value;
             const title = document.getElementById("course-title").value.trim();
             const desc = document.getElementById("course-desc").value.trim();
-
             if (id) {
                 await DB.updateCourse(parseInt(id), title, desc);
                 showAlert("success", "El curso ha sido actualizado.");
@@ -393,12 +403,10 @@
             }
         }
 
-        // Module CRUD
         async function openModuleModal(courseId, id = null) {
             const modal = document.getElementById("module-modal");
             const titleEl = document.getElementById("module-modal-title");
             document.getElementById("module-course-id").value = courseId;
-            
             if (id) {
                 const mod = (await DB.getModules()).find(m => m.id === id);
                 document.getElementById("module-id").value = mod.id;
@@ -410,8 +418,6 @@
                 document.getElementById("module-id").value = "";
                 document.getElementById("module-title").value = "";
                 document.getElementById("module-desc").value = "";
-                
-                // Set default order as length + 1
                 const count = (await DB.getModules()).filter(m => m.course_id === courseId).length;
                 document.getElementById("module-order").value = count + 1;
                 titleEl.innerText = "Agregar Módulo";
@@ -426,7 +432,6 @@
             const title = document.getElementById("module-title").value.trim();
             const desc = document.getElementById("module-desc").value.trim();
             const order = document.getElementById("module-order").value;
-
             if (id) {
                 await DB.updateModule(parseInt(id), title, desc, order);
                 showAlert("success", "El módulo ha sido actualizado.");
@@ -446,12 +451,10 @@
             }
         }
 
-        // Video CRUD
         async function openVideoModal(moduleId, id = null) {
             const modal = document.getElementById("video-modal");
             const titleEl = document.getElementById("video-modal-title");
             document.getElementById("video-module-id").value = moduleId;
-
             if (id) {
                 const vid = (await DB.getVideos()).find(v => v.id === id);
                 document.getElementById("video-id").value = vid.id;
@@ -465,8 +468,6 @@
                 document.getElementById("video-title").value = "";
                 document.getElementById("video-url").value = "";
                 document.getElementById("video-desc").value = "";
-                
-                // Set default order
                 const count = (await DB.getVideos()).filter(v => v.module_id === moduleId).length;
                 document.getElementById("video-order").value = count + 1;
                 titleEl.innerText = "Agregar Video";
@@ -482,7 +483,6 @@
             const url = document.getElementById("video-url").value.trim();
             const desc = document.getElementById("video-desc").value.trim();
             const order = document.getElementById("video-order").value;
-
             if (id) {
                 await DB.updateVideo(parseInt(id), title, url, desc, order);
                 showAlert("success", "El video ha sido actualizado.");
@@ -502,24 +502,15 @@
             }
         }
 
-        // UI Modal closer helper
         function closeModal(id) {
             document.getElementById(id).style.display = "none";
         }
 
-        // Escape HTML helper to prevent XSS in mock CRUD insertions
         function escapeHTML(str) {
             if (!str) return '';
-            return str.replace(/[&<>'"]/g, 
-                tag => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#39;',
-                    '"': '&quot;'
-                }[tag] || tag)
+            return str.replace(/[&<>'"]/g,
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
             );
         }
     </script>
-</body>
-</html>
+</body></html>
