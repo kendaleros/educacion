@@ -293,7 +293,7 @@
             }
             
             document.getElementById("active-video-title").innerText = video.title;
-            document.getElementById("active-video-desc").innerText = video.description || "Esta lección no tiene descripción adicional.";
+            document.getElementById("active-video-desc").innerText = video.description || "";
 
             if (videoContainer) {
                 videoContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
