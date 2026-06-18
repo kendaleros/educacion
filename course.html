@@ -118,6 +118,7 @@
             document.title = `${currentCourse.title} - SAN MARCOS`;
 
             await renderModulesAccordion();
+            loadBestThumbnails();
 
             const videoId = parseInt(urlParams.get("video"));
             if (videoId) {
@@ -146,14 +147,14 @@
                     .filter(v => v.module_id === mod.id)
                     .sort((a, b) => a.order - b.order);
 
-                const videosHtml = videos.map(vid => `
+                const videosHtml = videos.map((vid, index) => `
                     <li id="video-item-${vid.id}" class="playlist-video-item" onclick="playVideo(${vid.id})">
                         <div class="playlist-thumb-mini">
-                            <img src="${getThumbnailUrl(vid.video_url)}" alt="${escapeHTML(vid.title)}" style="width: 100%; height: 100%; object-fit: cover;">
+                            <img data-video-url="${escapeHTML(vid.video_url)}" src="https://i.imgur.com/sYV8Lyi.png" alt="${escapeHTML(vid.title)}" onerror="this.onerror=null; this.src='https://via.placeholder.com/160x90?text=Miniatura';" style="width: 100%; height: 100%; object-fit: cover; display: block;">
                         </div>
                         <div class="playlist-meta">
-                            <span class="playlist-title-mini">${escapeHTML(vid.title)}</span>
-                            <span class="playlist-sub-mini">Lección</span>
+                            <span class="playlist-title-mini">${index + 1}. ${escapeHTML(vid.title)}</span>
+                            <span class="playlist-sub-mini">Lección ${index + 1}</span>
                         </div>
                     </li>
                 `).join("");
@@ -181,6 +182,34 @@
             content.classList.toggle("open");
             icon.style.transform = content.classList.contains("open") ? "rotate(180deg)" : "rotate(0deg)";
         }
+
+        // Try to load the best available thumbnail for each playlist item.
+        function loadBestThumbnails() {
+            const imgs = document.querySelectorAll('.playlist-thumb-mini img[data-video-url]');
+            imgs.forEach(img => {
+                const videoUrl = img.getAttribute('data-video-url');
+                const candidates = (typeof getCandidateThumbnails === 'function') ? getCandidateThumbnails(videoUrl) : [];
+                if (!candidates.length) return;
+
+                // try each candidate in order until one loads
+                let tried = 0;
+                const tryNext = () => {
+                    if (tried >= candidates.length) {
+                        return;
+                    }
+                    const candidate = candidates[tried++];
+                    const tester = new Image();
+                    tester.onload = () => { img.src = candidate; };
+                    tester.onerror = () => { tryNext(); };
+                    tester.src = candidate;
+                };
+
+                tryNext();
+            });
+        }
+
+        // run shortly after render
+        setTimeout(loadBestThumbnails, 50);
 
         async function playVideo(id, autoStart = true) {
             const videos = await DB.getVideos();
@@ -265,6 +294,12 @@
             
             document.getElementById("active-video-title").innerText = video.title;
             document.getElementById("active-video-desc").innerText = video.description || "Esta lección no tiene descripción adicional.";
+
+            if (videoContainer) {
+                videoContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
 
             const newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + `?id=${currentCourse.id}&video=${id}`;
             window.history.replaceState({ path: newurl }, '', newurl);

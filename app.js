@@ -1,5 +1,8 @@
 // Core Data Manager - Powered by Supabase
 
+// Default thumbnail for all videos
+const DEFAULT_THUMBNAIL = "https://i.imgur.com/sYV8Lyi.png";
+
 function normalizeVideoInput(value) {
     if (!value) return "";
     const input = value.trim();
@@ -110,16 +113,50 @@ function getEmbedUrl(url, options = {}) {
 
 // Get video thumbnail URL
 function getThumbnailUrl(url) {
+    return DEFAULT_THUMBNAIL;
+}
+
+// Return an array of candidate thumbnail URLs for a video URL (YouTube, Vimeo, Drive, Odysee)
+function getCandidateThumbnails(url) {
     const source = normalizeVideoInput(url);
-    if (!source) return "https://via.placeholder.com/160x90?text=No+Video";
+    const candidates = [];
+    
+    if (!source) return candidates;
+
     const ytMatch = source.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-    if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`;
+    if (ytMatch) {
+        const id = ytMatch[1];
+        candidates.push(
+            `https://img.youtube.com/vi/${id}/maxresdefault.jpg`,
+            `https://img.youtube.com/vi/${id}/sddefault.jpg`,
+            `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+            `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
+            `https://img.youtube.com/vi/${id}/default.jpg`
+        );
+        return candidates;
+    }
+
     const vimeoMatch = source.match(/vimeo\.com\/(?:video\/)?([0-9]+)/);
-    if (vimeoMatch) return `https://vumbnail.com/${vimeoMatch[1]}.jpg`;
+    if (vimeoMatch) {
+        candidates.push(`https://vumbnail.com/${vimeoMatch[1]}.jpg`);
+        return candidates;
+    }
+
     const driveFileId = getGoogleDriveFileId(source);
-    if (driveFileId) return `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w320`;
-    if (isOdyseeUrl(source)) return "https://via.placeholder.com/160x90?text=Odysee";
-    return "https://via.placeholder.com/160x90?text=Video";
+    if (driveFileId) {
+        candidates.push(
+            `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w640`,
+            `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w320`
+        );
+        return candidates;
+    }
+
+    if (isOdyseeUrl(source)) {
+        candidates.push("https://via.placeholder.com/640x360?text=Odysee");
+        return candidates;
+    }
+
+    return candidates;
 }
 
 // Database Operations using Supabase

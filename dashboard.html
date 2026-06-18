@@ -131,6 +131,13 @@
                     <label class="form-label" for="video-url">URL o iframe del Video (YouTube, Vimeo, Google Drive u Odysee)</label>
                     <textarea class="form-control" id="video-url" required rows="3" placeholder='https://odysee.com/$/embed/... o <iframe src="https://drive.google.com/file/d/.../preview"></iframe>'></textarea>
                 </div>
+                <div style="display:flex; gap:8px; align-items:center; margin-top: 6px;">
+                    <button type="button" class="btn btn-secondary" id="generate-thumbs-btn" onclick="generateThumbnails()">Generar miniaturas</button>
+                    <button type="button" class="btn btn-secondary" id="copy-thumb-btn" style="display:none;" onclick="copySelectedThumbnail()">Copiar miniatura</button>
+                    <button type="button" class="btn btn-secondary" id="apply-temp-btn" style="display:none;" onclick="applySelectedThumbnailPreview()">Aplicar vista previa</button>
+                </div>
+                <div id="thumbnail-candidates" style="display:flex; gap:8px; margin-top:12px; overflow-x:auto;"></div>
+                <img id="selected-thumbnail-preview" src="" alt="Vista previa" style="width:100%; max-width:320px; margin-top:12px; display:none; border:1px solid var(--card-border);">
                 <div class="form-group">
                     <label class="form-label" for="video-desc">Descripción (Opcional)</label>
                     <textarea class="form-control" id="video-desc" rows="2" placeholder="Resumen del contenido del video..."></textarea>
@@ -472,6 +479,12 @@
                 document.getElementById("video-order").value = count + 1;
                 titleEl.innerText = "Agregar Video";
             }
+            // Clear thumbnail candidate UI when opening
+            document.getElementById('thumbnail-candidates').innerHTML = '';
+            document.getElementById('selected-thumbnail-preview').style.display = 'none';
+            selectedCandidateThumbnail = null;
+            document.getElementById('copy-thumb-btn').style.display = 'none';
+            document.getElementById('apply-temp-btn').style.display = 'none';
             modal.style.display = "flex";
         }
 
@@ -492,6 +505,76 @@
             }
             closeModal('video-modal');
             await renderAdminCourses();
+        }
+
+        // Thumbnail candidate selection utilities
+        let selectedCandidateThumbnail = null;
+
+        function generateThumbnails() {
+            const url = document.getElementById('video-url').value.trim();
+            const container = document.getElementById('thumbnail-candidates');
+            container.innerHTML = '';
+            document.getElementById('selected-thumbnail-preview').style.display = 'none';
+            selectedCandidateThumbnail = null;
+
+            if (!url) {
+                alert('Introduce la URL del video primero.');
+                return;
+            }
+
+            const candidates = getCandidateThumbnails(url) || [];
+            if (!candidates.length) {
+                container.innerHTML = '<span style="color: var(--text-muted);">No se encontraron miniaturas candidatas.</span>';
+                return;
+            }
+
+            candidates.forEach((c, i) => {
+                const img = document.createElement('img');
+                img.src = c;
+                img.alt = `Miniatura ${i+1}`;
+                img.style.width = '160px';
+                img.style.height = '90px';
+                img.style.objectFit = 'cover';
+                img.style.cursor = 'pointer';
+                img.style.border = '2px solid transparent';
+                img.onclick = () => selectCandidateThumbnail(c, img);
+                img.onerror = () => { img.src = 'https://via.placeholder.com/160x90?text=No+disponible'; };
+                container.appendChild(img);
+            });
+        }
+
+        function selectCandidateThumbnail(url, el) {
+            // highlight selection
+            document.querySelectorAll('#thumbnail-candidates img').forEach(i => i.style.border = '2px solid transparent');
+            el.style.border = '2px solid var(--primary)';
+            selectedCandidateThumbnail = url;
+            const preview = document.getElementById('selected-thumbnail-preview');
+            preview.src = url;
+            preview.style.display = 'block';
+            document.getElementById('copy-thumb-btn').style.display = 'inline-block';
+            document.getElementById('apply-temp-btn').style.display = 'inline-block';
+        }
+
+        function copySelectedThumbnail() {
+            if (!selectedCandidateThumbnail) return alert('Selecciona primero una miniatura');
+            navigator.clipboard.writeText(selectedCandidateThumbnail).then(() => {
+                showAlert('success', 'URL de miniatura copiada al portapapeles.');
+            }).catch(() => {
+                alert('No fue posible copiar. Selecciona y copia manualmente.');
+            });
+        }
+
+        // Apply preview to current modal (non-persistent) so admin can see how looks in the list
+        function applySelectedThumbnailPreview() {
+            if (!selectedCandidateThumbnail) return alert('Selecciona primero una miniatura');
+            const preview = document.getElementById('selected-thumbnail-preview');
+            // If editing an existing video, try to update any visible playlist thumb for that id (non-persistent)
+            const vidId = document.getElementById('video-id').value;
+            if (vidId) {
+                const adminThumb = document.querySelector(`#admin-video-thumb-${vidId}`);
+                if (adminThumb) adminThumb.src = selectedCandidateThumbnail;
+            }
+            showAlert('success', 'Vista previa aplicada (temporal). Si quieres guardarla, copia la URL y úsala donde necesites.');
         }
 
         async function deleteVideo(id) {

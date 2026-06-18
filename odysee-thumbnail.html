@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Componente miniatura Odysee</title>
+  <style>
+    .odysee-card { max-width: 640px; margin: 12px; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
+    .odysee-player { position: relative; width: 100%; background: #000; overflow: hidden; border-radius: 8px; }
+    .odysee-player::before { content: ""; display: block; padding-top: 56.25%; }
+    .odysee-inner { position: absolute; inset: 0; display: flex; align-items: stretch; justify-content: stretch; }
+
+    .odysee-thumb { position: absolute; inset: 0; cursor: pointer; display: block; }
+    .odysee-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .odysee-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 68px; height: 68px; border-radius: 50%; background: rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; cursor:pointer; transition: transform .12s ease; border: none; }
+    .odysee-play:active { transform: translate(-50%, -50%) scale(.98); }
+    .odysee-play svg { width: 32px; height: 32px; fill: #fff; margin-left: 4px; }
+
+    .odysee-duration { position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,0.75); color: #fff; padding: 3px 6px; font-size: 13px; border-radius: 4px; }
+
+    .odysee-iframe { position: absolute; inset: 0; border: 0; width: 100%; height: 100%; }
+
+    .odysee-meta { margin-top: 8px; }
+    .odysee-title { font-weight: 600; color: #0b2b4a; margin: 0 0 4px 0; font-size: 16px; }
+    .odysee-channel { color: #38506a; font-size: 14px; margin: 0; }
+
+    @media (max-width:420px){ .odysee-play { width:56px; height:56px; } .odysee-play svg { width:24px; height:24px } }
+  </style>
+</head>
+<body>
+
+<!--
+  Componente Odysee Thumbnail
+  Uso:
+  <div class="odysee-card" data-embed="https://odysee.com/$/embed/CLAIM" data-thumb="https://...jpg" data-duration="12:34" data-title="Título del vídeo" data-channel="Nombre del canal"></div>
+  - `data-embed`: URL base para el iframe (sin autoplay) o claim embed URL. Se añadirá `?autoplay=1` automáticamente.
+  - `data-thumb`: URL de la imagen a mostrar inicialmente.
+  - `data-duration`: texto de duración a mostrar (opcional).
+  - `data-title`, `data-channel`: metadatos mostrados debajo del player.
+-->
+
+<div id="examples">
+  <h2>Ejemplo del componente</h2>
+  <div class="odysee-card" data-embed="https://odysee.com/$/embed/@lbry-team/fake-video:0" data-thumb="https://via.placeholder.com/1280x720.png?text=Miniatura+Odysee" data-duration="3:21" data-title="Demo Odysee" data-channel="Canal Demo"></div>
+</div>
+
+<script>
+  (function(){
+    function addAutoplay(url){
+      if(!url) return url;
+      return url + (url.indexOf('?') === -1 ? '?autoplay=1' : '&autoplay=1');
+    }
+
+    function createIframe(embedUrl){
+      const iframe = document.createElement('iframe');
+      iframe.className = 'odysee-iframe';
+      iframe.src = addAutoplay(embedUrl);
+      iframe.setAttribute('allow','autoplay; encrypted-media; fullscreen');
+      iframe.setAttribute('allowfullscreen','');
+      iframe.loading = 'lazy';
+      return iframe;
+    }
+
+    function initCard(card){
+      if(card.__odyseeInitialized) return;
+      card.__odyseeInitialized = true;
+
+      const embed = card.dataset.embed;
+      const thumb = card.dataset.thumb || '';
+      const duration = card.dataset.duration || '';
+      const title = card.dataset.title || '';
+      const channel = card.dataset.channel || '';
+
+      const player = document.createElement('div'); player.className = 'odysee-player';
+      const inner = document.createElement('div'); inner.className = 'odysee-inner';
+
+      const thumbWrap = document.createElement('div'); thumbWrap.className = 'odysee-thumb';
+      const img = document.createElement('img'); img.alt = title || 'Video'; img.decoding = 'async';
+      img.src = thumb;
+      thumbWrap.appendChild(img);
+
+      const play = document.createElement('button'); play.className = 'odysee-play'; play.setAttribute('aria-label','Reproducir video');
+      play.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>';
+
+      if(duration){
+        const dur = document.createElement('div'); dur.className = 'odysee-duration'; dur.textContent = duration; player.appendChild(dur);
+      }
+
+      inner.appendChild(thumbWrap);
+      inner.appendChild(play);
+      player.appendChild(inner);
+      card.appendChild(player);
+
+      const meta = document.createElement('div'); meta.className = 'odysee-meta';
+      const t = document.createElement('div'); t.className = 'odysee-title'; t.textContent = title;
+      const c = document.createElement('div'); c.className = 'odysee-channel'; c.textContent = channel;
+      meta.appendChild(t); meta.appendChild(c);
+      card.appendChild(meta);
+
+      function playHandler(){
+        if(player.dataset.playing) return;
+        player.dataset.playing = '1';
+        while(inner.firstChild) inner.removeChild(inner.firstChild);
+        const iframe = createIframe(embed);
+        inner.appendChild(iframe);
+      }
+
+      thumbWrap.addEventListener('click', playHandler);
+      play.addEventListener('click', playHandler);
+    }
+
+    function initAll(){
+      document.querySelectorAll('.odysee-card').forEach(initCard);
+    }
+
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initAll); else initAll();
+  })();
+</script>
+
+</body>
+</html>
