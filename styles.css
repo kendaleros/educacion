@@ -1,21 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
 :root {
-    --bg-color: #0f0f0f;
-    --card-bg: #212121;
-    --card-border: #303030;
-    --primary: #3ea6ff;
-    --primary-glow: rgba(62, 166, 255, 0.22);
-    --primary-hover: #5db3ff;
-    --accent: #3ea6ff;
-    --accent-glow: rgba(62, 166, 255, 0.22);
-    --text-main: #ffffff;
-    --text-muted: #aaaaaa;
-    --success: #27ae60;
-    --warning: #f39c12;
-    --danger: #e74c3c;
-    --glass-blur: blur(12px);
-    --shadow: 0 14px 35px -18px rgba(0, 0, 0, 0.5);
+    --bg-color: #eef7ff;
+    --surface: #ffffff;
+    --surface-soft: #f7fbff;
+    --surface-strong: #dce9f8;
+    --surface-muted: #e7f0f9;
+    --card-border: #c7dce9;
+    --primary: #0d4f8c;
+    --primary-glow: rgba(13, 79, 140, 0.22);
+    --primary-hover: #1e6ab3;
+    --accent: #57a7ff;
+    --accent-alt: #1a75d1;
+    --accent-glow: rgba(87, 167, 255, 0.22);
+    --text-main: #0f2a45;
+    --text-muted: #5c7593;
+    --success: #1f8b5f;
+    --warning: #f5a623;
+    --danger: #ce2f3f;
+    --focus: rgba(87, 167, 255, 0.24);
+    --glass-blur: blur(18px);
+    --shadow: 0 22px 55px -30px rgba(15, 42, 69, 0.14);
     --radius: 0;
     --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -26,7 +31,7 @@
     box-sizing: border-box;
     font-family: 'Roboto', sans-serif;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) #0f0f0f;
+    scrollbar-color: rgba(29, 89, 151, 0.25) var(--surface-soft);
 }
 
 /* Scrollbar Customization (YouTube style) */
@@ -35,14 +40,14 @@
     height: 8px;
 }
 *::-webkit-scrollbar-track {
-    background: #0f0f0f;
+    background: var(--surface-soft);
 }
 *::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(29, 89, 151, 0.25);
     border-radius: 0;
 }
 *::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(29, 89, 151, 0.35);
 }
 
 html {
@@ -52,12 +57,24 @@ html {
 }
 
 body {
-    background-color: var(--bg-color);
+    background: radial-gradient(circle at 18% 14%, rgba(87, 167, 255, 0.24), transparent 24%),
+                radial-gradient(circle at 80% 78%, rgba(13, 79, 140, 0.14), transparent 18%),
+                linear-gradient(180deg, #f3faff 0%, #e9f2fb 45%, #f8fcff 100%);
     color: var(--text-main);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     overflow-x: hidden;
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top left, rgba(87, 167, 255, 0.16), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(13, 79, 140, 0.1), transparent 22%);
+    pointer-events: none;
 }
 
 img,
@@ -79,9 +96,10 @@ p {
 
 /* Glassmorphism Card Style removed, YouTube uses simple cards */
 .glass-card {
-    background: var(--card-bg);
+    background: linear-gradient(180deg, var(--surface), var(--surface-soft));
     border: 1px solid var(--card-border);
     border-radius: 0;
+    box-shadow: 0 18px 45px -28px rgba(15, 42, 69, 0.08);
 }
 
 /* Auth Pages Layout */
@@ -98,15 +116,19 @@ p {
     max-width: 440px;
     padding: 40px;
     text-align: center;
-    background: var(--card-bg);
+    background: linear-gradient(180deg, var(--surface), var(--surface-soft));
+    border: 1px solid var(--card-border);
+    box-shadow: 0 28px 70px -40px rgba(13, 79, 140, 0.15);
 }
 
 .auth-logo {
-    font-size: 1.8rem;
+    font-size: 1.9rem;
     font-weight: 700;
-    color: var(--text-main);
+    color: var(--primary);
     margin-bottom: 8px;
     display: inline-block;
+    letter-spacing: 0.04em;
+    text-shadow: 0 2px 10px rgba(13, 79, 140, 0.16);
 }
 
 .auth-subtitle {
@@ -131,7 +153,7 @@ p {
 
 .form-control {
     width: 100%;
-    background: #121212;
+    background: var(--surface-soft);
     border: 1px solid var(--card-border);
     padding: 12px 16px;
     border-radius: 0;
@@ -142,8 +164,9 @@ p {
 
 .form-control:focus {
     outline: none;
-    border-color: var(--primary);
-    background: #181818;
+    border-color: var(--accent);
+    background: #eff6ff;
+    box-shadow: 0 0 0 4px rgba(87, 167, 255, 0.14);
 }
 
 /* Buttons */
@@ -166,21 +189,22 @@ p {
 }
 
 .btn-primary {
-    background: var(--primary);
-    color: #000;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #ffffff;
+    box-shadow: 0 18px 45px -30px rgba(29, 89, 151, 0.45);
 }
 
 .btn-primary:hover {
-    background: var(--primary-hover);
+    background: linear-gradient(135deg, var(--primary-hover), var(--accent));
 }
 
 .btn-secondary {
-    background: #272727;
+    background: var(--surface-soft);
     color: var(--text-main);
 }
 
 .btn-secondary:hover {
-    background: #3f3f3f;
+    background: var(--surface-strong);
 }
 
 .btn-danger {
@@ -217,8 +241,10 @@ p {
 
 /* Header / Navigation (YouTube style) */
 header {
-    background: #0f0f0f;
-    border-bottom: 1px solid #272727;
+    background: rgba(255, 255, 255, 0.92);
+    border-bottom: 1px solid rgba(13, 79, 140, 0.11);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 16px 40px -32px rgba(15, 42, 69, 0.12);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -266,18 +292,18 @@ header {
 }
 
 .user-role.admin {
-    background-color: #dc3545;
+    background-color: var(--danger);
     color: white;
 }
 
 .user-role.student {
-    background-color: #0d6efd;
+    background-color: var(--primary);
     color: white;
 }
 
 .user-role.pending {
-    background-color: #ffc107;
-    color: #000;
+    background-color: var(--warning);
+    color: #0f2a45;
 }
 
 /* Layout */
@@ -323,12 +349,15 @@ main {
     flex-direction: column;
     height: 100%;
     transition: var(--transition);
-    background: #212121;
+    background: var(--surface);
     min-width: 0;
+    border: 1px solid var(--card-border);
+    box-shadow: 0 22px 50px -36px rgba(13, 79, 140, 0.12);
 }
 
 .course-card:hover {
-    background: #272727;
+    background: var(--surface-soft);
+    transform: translateY(-1px);
 }
 
 .course-card-title {
@@ -373,8 +402,8 @@ main {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    background-color: #1a1a1a;
-    border: 1px solid #272727;
+    background-color: var(--surface-soft);
+    border: 1px solid var(--card-border);
     min-width: 0;
     max-width: 100%;
 }
@@ -386,8 +415,8 @@ main {
 }
 
 .admin-user-item {
-    background-color: #212121;
-    border: 1px solid #272727;
+    background-color: var(--surface);
+    border: 1px solid var(--card-border);
     border-radius: 0;
     padding: 12px;
     display: flex;
@@ -415,10 +444,11 @@ main {
 
 .admin-main-panel {
     padding: 20px;
-    background-color: #1a1a1a;
-    border: 1px solid #272727;
+    background-color: var(--surface-soft);
+    border: 1px solid var(--card-border);
     min-width: 0;
     max-width: 100%;
+    box-shadow: 0 20px 45px -30px rgba(13, 79, 140, 0.1);
 }
 
 .admin-header-actions {
@@ -437,8 +467,8 @@ main {
 }
 
 .admin-course-item {
-    background-color: #212121;
-    border: 1px solid #272727;
+    background-color: var(--surface);
+    border: 1px solid var(--card-border);
     border-radius: 0;
     padding: 20px;
     margin-bottom: 16px;
@@ -484,7 +514,7 @@ main {
 .admin-modules-container {
     margin-top: 16px;
     padding-left: 12px;
-    border-left: 2px solid #272727;
+    border-left: 2px solid var(--card-border);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -492,8 +522,8 @@ main {
 }
 
 .admin-module-item {
-    background-color: #1a1a1a;
-    border: 1px solid #272727;
+    background-color: var(--surface-soft);
+    border: 1px solid var(--card-border);
     border-radius: 0;
     padding: 12px;
     min-width: 0;
@@ -529,8 +559,8 @@ main {
 }
 
 .admin-video-item {
-    background-color: #212121;
-    border: 1px dashed #272727;
+    background-color: var(--surface);
+    border: 1px dashed var(--card-border);
     border-radius: 0;
     padding: 10px 12px;
     display: flex;
@@ -591,7 +621,7 @@ main {
     margin-left: calc(50% - 50vw);
     transform: none;
     aspect-ratio: 16 / 9;
-    background: #000;
+    background: #081a30;
     overflow: hidden;
     flex-shrink: 0;
     isolation: isolate;
@@ -626,7 +656,7 @@ main {
 }
 
 .video-container video {
-    background: #000;
+    background: #081a30;
     object-fit: contain;
 }
 
@@ -640,7 +670,7 @@ main {
     color: var(--text-muted);
     padding: 24px;
     text-align: center;
-    background: #000;
+    background: #081a30;
 }
 
 .video-no-content svg {
@@ -682,9 +712,10 @@ main {
 
 #active-video-details .glass-card {
     padding: 16px;
-    background: #212121;
+    background: linear-gradient(180deg, var(--surface), var(--surface-soft));
     border: none;
     margin-top: 16px;
+    box-shadow: 0 20px 40px -28px rgba(15, 42, 69, 0.14);
 }
 
 #active-video-details p {
@@ -694,10 +725,10 @@ main {
 }
 
 .course-meta {
-    border-top: 1px solid #272727;
+    border-top: 1px solid var(--card-border);
     padding: 20px 16px;
     margin-top: 20px !important;
-    background: #0f0f0f;
+    background: var(--surface-soft);
 }
 
 @media (min-width: 1024px) {
@@ -782,7 +813,7 @@ main {
 }
 
 .accordion-header:hover {
-    background: #272727;
+    background: var(--surface-soft);
 }
 
 .accordion-content {
@@ -829,18 +860,18 @@ main {
 }
 
 .playlist-video-item:hover {
-    background: #272727;
+    background: var(--surface-soft);
 }
 
 .playlist-video-item.active {
-    background: #272727;
+    background: var(--surface-soft);
 }
 
 .playlist-thumb-mini {
     width: 140px;
     height: 79px;
     border-radius: 0;
-    background: #000;
+    background: #081a30;
     overflow: hidden;
     flex-shrink: 0;
     box-shadow: none;
@@ -881,9 +912,9 @@ main {
     header {
         position: static;
         order: 2;
-        background: #0f0f0f;
-        border-top: 1px solid #272727;
-        border-bottom: 1px solid #272727;
+        background: var(--surface);
+        border-top: 1px solid var(--card-border);
+        border-bottom: 1px solid var(--card-border);
     }
 
     body {
@@ -1110,8 +1141,8 @@ main {
 }
 
 .modal-content {
-    background-color: #212121;
-    border: 1px solid #272727;
+    background-color: var(--surface);
+    border: 1px solid var(--card-border);
     padding: 24px;
     width: 100%;
     max-width: 560px;
@@ -1234,7 +1265,7 @@ main {
 }
 
 .alert-message.info {
-    background-color: #3ea6ff;
+    background-color: var(--accent);
     color: black;
 }
 
