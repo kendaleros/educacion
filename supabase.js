@@ -1,6 +1,12 @@
 // Supabase Configuration
-// IMPORTANTE: Reemplaza estos valores con los tuyos de Supabase
-const SUPABASE_URL = 'https://fqcfbtjtilipyykaprxv.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxY2ZidGp0aWxpcHl5a2Fwcnh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NjA4NTcsImV4cCI6MjA5NzAzNjg1N30.KvPfBJF7hquXRsqQiTSFNxy-uendPE1is-ihZ0v2wQw';
+// Load credentials from config.js (which should NOT be committed to version control).
+// Copy config.example.js to config.js and fill in your real Supabase project values.
+
+if (typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_ANON_KEY === 'undefined') {
+    console.error(
+        'Supabase credentials are not configured. ' +
+        'Copy config.example.js to config.js and set SUPABASE_URL and SUPABASE_ANON_KEY.'
+    );
+}
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

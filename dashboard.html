@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAN MARCOS</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js" integrity="sha384-+exuGmToMCgcfiTDu+P+1aCmlH2Mis7lstkjVmVHdwvJqtNNqhxMreqsIe6bVstn" crossorigin="anonymous"></script>
+    <script src="config.js"></script>
     <script src="supabase.js"></script>
     <script src="app.js"></script>
     <script src="auth.js"></script>
@@ -202,13 +203,21 @@
         }
 
         function showAlert(type, message) {
+            const allowedTypes = ['info', 'success', 'danger', 'warning'];
+            const safeType = allowedTypes.includes(type) ? type : 'info';
             const container = document.getElementById("alert-container");
-            container.innerHTML = `
-                <div class="alert-message ${type}">
-                    <span>${message}</span>
-                    <button class="alert-close-btn" onclick="this.parentElement.remove()">&times;</button>
-                </div>
-            `;
+            const div = document.createElement('div');
+            div.className = `alert-message ${safeType}`;
+            const span = document.createElement('span');
+            span.textContent = message;
+            const btn = document.createElement('button');
+            btn.className = 'alert-close-btn';
+            btn.innerHTML = '&times;';
+            btn.onclick = () => div.remove();
+            div.appendChild(span);
+            div.appendChild(btn);
+            container.innerHTML = '';
+            container.appendChild(div);
             setTimeout(() => { container.innerHTML = ""; }, 5000);
         }
 

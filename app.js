@@ -163,7 +163,7 @@ function getCandidateThumbnails(url) {
 const DB = {
     // --- Users ---
     getUsers: async () => {
-        const { data, error } = await supabase.from('users').select('*');
+        const { data, error } = await supabase.from('users').select('id, username, email, is_staff, is_validated, created_at');
         if (error) { console.error(error); return []; }
         return data;
     },

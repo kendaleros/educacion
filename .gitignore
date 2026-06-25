@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Supabase credentials (copy config.example.js to config.js)
+config.js
+
 # vercel
 .vercel
 
