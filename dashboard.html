@@ -9,6 +9,7 @@
     <script src="supabase.js"></script>
     <script src="app.js"></script>
     <script src="auth.js"></script>
+    <script src="shared.js"></script>
 </head>
 <body>
     <!-- Navigation Header -->
@@ -165,18 +166,8 @@
 
                 const ES_ADMIN = currentUser.is_staff === true;
 
-                // Actualizar header
-                document.getElementById("header-username").innerText = currentUser.username;
+                initHeader(currentUser);
                 document.getElementById("dashboard-title").innerText = `Hola, ${currentUser.username}`;
-
-                const roleEl = document.getElementById("header-role");
-                if (ES_ADMIN) {
-                    roleEl.innerText = "Administrador";
-                    roleEl.className = "user-role admin";
-                } else {
-                    roleEl.innerText = "Estudiante";
-                    roleEl.className = "user-role student";
-                }
 
                 // Renderizar dashboard correcto
                 renderDashboard(ES_ADMIN);
@@ -201,17 +192,6 @@
             }
         }
 
-        function showAlert(type, message) {
-            const container = document.getElementById("alert-container");
-            container.innerHTML = `
-                <div class="alert-message ${type}">
-                    <span>${message}</span>
-                    <button class="alert-close-btn" onclick="this.parentElement.remove()">&times;</button>
-                </div>
-            `;
-            setTimeout(() => { container.innerHTML = ""; }, 5000);
-        }
-
         // ================= STUDENT RENDER =================
         async function renderStudentCourses() {
             const courses = await DB.getCourses();
@@ -226,7 +206,7 @@
             const allVideos = await DB.getVideos();
 
             grid.innerHTML = courses.map(course => {
-                const modules = allModules.filter(m => m.course_id === course.id);
+                const modules = getModulesForCourse(allModules, course.id);
                 const totalVideos = allVideos.filter(v => modules.some(m => m.id === v.module_id)).length;
                 return `
                     <div class="glass-card course-card">
@@ -305,14 +285,10 @@
             const allVideos = await DB.getVideos();
 
             container.innerHTML = courses.map(course => {
-                const modules = allModules
-                    .filter(m => m.course_id === course.id)
-                    .sort((a, b) => a.order - b.order);
+                const modules = getModulesForCourse(allModules, course.id);
 
                 const modulesHtml = modules.map(mod => {
-                    const videos = allVideos
-                        .filter(v => v.module_id === mod.id)
-                        .sort((a, b) => a.order - b.order);
+                    const videos = getVideosForModule(allVideos, mod.id);
 
                     const videosHtml = videos.map(vid => `
                         <div class="admin-video-item">
@@ -585,15 +561,5 @@
             }
         }
 
-        function closeModal(id) {
-            document.getElementById(id).style.display = "none";
-        }
-
-        function escapeHTML(str) {
-            if (!str) return '';
-            return str.replace(/[&<>'"]/g,
-                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-            );
-        }
     </script>
 </body></html>

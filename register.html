@@ -9,6 +9,7 @@
     <script src="supabase.js"></script>
     <script src="app.js"></script>
     <script src="auth.js"></script>
+    <script src="shared.js"></script>
 </head>
 <body>
     <div class="auth-container">
@@ -54,15 +55,6 @@
         // Check if user is already logged in
         AUTH.redirectIfLoggedIn();
 
-        function showAlert(type, message) {
-            const container = document.getElementById("alert-container");
-            container.innerHTML = `
-                <div class="alert alert-${type}">
-                    <span>${message}</span>
-                </div>
-            `;
-        }
-
         async function handleRegister(e) {
             e.preventDefault();
             const username = document.getElementById("reg-username").value.trim();
@@ -72,22 +64,22 @@
 
             // Simple checks
             if (password.length < 6) {
-                showAlert("danger", "La contraseña debe tener al menos 6 caracteres.");
+                showAlert("danger", "La contraseña debe tener al menos 6 caracteres.", { variant: "auth" });
                 return;
             }
 
             if (password !== confirm) {
-                showAlert("danger", "Las contraseñas no coinciden.");
+                showAlert("danger", "Las contraseñas no coinciden.", { variant: "auth" });
                 return;
             }
 
-            showAlert("info", "Registrando usuario...");
+            showAlert("info", "Registrando usuario...", { variant: "auth" });
             const res = await AUTH.register(username, email, password);
 
             if (res.success) {
                 window.location.href = "login.html?registered=true";
             } else {
-                showAlert("danger", res.message);
+                showAlert("danger", res.message, { variant: "auth" });
             }
         }
     </script>

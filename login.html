@@ -9,6 +9,7 @@
     <script src="supabase.js"></script>
     <script src="app.js"></script>
     <script src="auth.js"></script>
+    <script src="shared.js"></script>
 </head>
 <body>
     <div class="auth-container">
@@ -66,25 +67,16 @@
             if (pendingUser) {
                 showPendingState(pendingUser);
             } else if (registered) {
-                showAlert("success", "Cuenta creada con éxito. Pendiente de aprobación por un administrador.");
+                showAlert("success", "Cuenta creada con éxito. Pendiente de aprobación por un administrador.", { variant: "auth" });
             }
         });
-
-        function showAlert(type, message) {
-            const container = document.getElementById("alert-container");
-            container.innerHTML = `
-                <div class="alert alert-${type}">
-                    <span>${message}</span>
-                </div>
-            `;
-        }
 
         async function handleLogin(e) {
             e.preventDefault();
             const usernameInput = document.getElementById("username").value;
             const passwordInput = document.getElementById("password").value;
 
-            showAlert("info", "Iniciando sesión...");
+            showAlert("info", "Iniciando sesión...", { variant: "auth" });
             const res = await AUTH.login(usernameInput, passwordInput);
 
             if (res.success) {
@@ -92,7 +84,7 @@
             } else if (res.pending) {
                 showPendingState(res.username);
             } else {
-                showAlert("danger", res.message);
+                showAlert("danger", res.message, { variant: "auth" });
             }
         }
 
