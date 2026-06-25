@@ -19,30 +19,28 @@ const AUTH = {
         try {
             const identifier = username.trim();
 
-            // Buscar usuario por username.
+            // Buscar usuario por username (only fetch needed columns).
             let { data: user, error } = await supabase
                 .from('users')
-                .select('*')
+                .select('id, username, email, is_staff, is_validated, password')
                 .eq('username', identifier)
-                .eq('password', password)
                 .maybeSingle();
 
             if (error) throw error;
 
-            // Si no existe, buscar por email. Evita errores de sintaxis en filtros OR con correos especiales.
+            // Si no existe, buscar por email.
             if (!user) {
                 const emailResult = await supabase
                     .from('users')
-                    .select('*')
+                    .select('id, username, email, is_staff, is_validated, password')
                     .eq('email', identifier)
-                    .eq('password', password)
                     .maybeSingle();
 
                 if (emailResult.error) throw emailResult.error;
                 user = emailResult.data;
             }
 
-            if (!user) {
+            if (!user || user.password !== password) {
                 return { success: false, message: "Nombre de usuario o contraseña incorrectos." };
             }
 
@@ -50,9 +48,10 @@ const AUTH = {
                 return { success: false, pending: true, username: user.username };
             }
 
-            // Guardar sesión
-            sessionStorage.setItem("currentUser", JSON.stringify(user));
-            return { success: true, user };
+            // Strip password before storing in session
+            const { password: _pw, ...safeUser } = user;
+            sessionStorage.setItem("currentUser", JSON.stringify(safeUser));
+            return { success: true, user: safeUser };
         } catch (err) {
             console.error('Login error:', err);
             return { success: false, message: "Error al iniciar sesión. Intenta de nuevo." };
@@ -62,6 +61,21 @@ const AUTH = {
     // Register process using Supabase
     register: async (username, email, password) => {
         try {
+            // Validate username format (alphanumeric, underscores, hyphens, 3-30 chars)
+            if (!/^[a-zA-Z0-9_-]{3,30}$/.test(username)) {
+                return { success: false, message: "El nombre de usuario solo puede contener letras, números, guiones y guiones bajos (3-30 caracteres)." };
+            }
+
+            // Validate email format
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                return { success: false, message: "El formato del correo electrónico no es válido." };
+            }
+
+            // Validate password strength
+            if (password.length < 6) {
+                return { success: false, message: "La contraseña debe tener al menos 6 caracteres." };
+            }
+
             // Verificar si username ya existe
             let { data: existingUsername } = await supabase
                 .from('users')
@@ -92,7 +106,7 @@ const AUTH = {
                     is_staff: false,
                     is_validated: false
                 }])
-                .select()
+                .select('id, username, email, is_staff, is_validated')
                 .single();
 
             if (error) throw error;

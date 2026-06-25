@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAN MARCOS</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js" integrity="sha384-+exuGmToMCgcfiTDu+P+1aCmlH2Mis7lstkjVmVHdwvJqtNNqhxMreqsIe6bVstn" crossorigin="anonymous"></script>
+    <script src="config.js"></script>
     <script src="supabase.js"></script>
     <script src="app.js"></script>
     <script src="auth.js"></script>
@@ -71,12 +72,16 @@
         });
 
         function showAlert(type, message) {
+            const allowedTypes = ['info', 'success', 'danger', 'warning'];
+            const safeType = allowedTypes.includes(type) ? type : 'info';
             const container = document.getElementById("alert-container");
-            container.innerHTML = `
-                <div class="alert alert-${type}">
-                    <span>${message}</span>
-                </div>
-            `;
+            const div = document.createElement('div');
+            div.className = `alert alert-${safeType}`;
+            const span = document.createElement('span');
+            span.textContent = message;
+            div.appendChild(span);
+            container.innerHTML = '';
+            container.appendChild(div);
         }
 
         async function handleLogin(e) {

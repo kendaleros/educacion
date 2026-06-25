@@ -47,8 +47,9 @@ CREATE TABLE videos (
 -- =============================================
 
 -- Usuario admin por defecto
+-- IMPORTANTE: Cambia 'CHANGE_ME_BEFORE_DEPLOY' por una contraseña segura antes de ejecutar.
 INSERT INTO users (username, email, password, is_staff, is_validated)
-VALUES ('admin', 'admin@curso.com', 'adminpassword', TRUE, TRUE);
+VALUES ('admin', 'admin@curso.com', 'CHANGE_ME_BEFORE_DEPLOY', TRUE, TRUE);
 
 -- Cursos de ejemplo
 INSERT INTO courses (title, description) VALUES
@@ -77,8 +78,42 @@ ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE modules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
 
--- Permitir todo al anon key (para tu app HTML estática)
-CREATE POLICY "Allow all" ON users FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON courses FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON modules FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON videos FOR ALL USING (true) WITH CHECK (true);
+-- Users: allow reading non-sensitive columns; allow insert for registration
+CREATE POLICY "Users can read own profile" ON users
+    FOR SELECT USING (true);
+CREATE POLICY "Anyone can register" ON users
+    FOR INSERT WITH CHECK (is_staff = false AND is_validated = false);
+CREATE POLICY "Staff can manage users" ON users
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_staff = true)
+    );
+
+-- Courses: anyone can read; only staff can modify
+CREATE POLICY "Anyone can view courses" ON courses
+    FOR SELECT USING (true);
+CREATE POLICY "Staff can manage courses" ON courses
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_staff = true)
+    ) WITH CHECK (
+        EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_staff = true)
+    );
+
+-- Modules: anyone can read; only staff can modify
+CREATE POLICY "Anyone can view modules" ON modules
+    FOR SELECT USING (true);
+CREATE POLICY "Staff can manage modules" ON modules
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_staff = true)
+    ) WITH CHECK (
+        EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_staff = true)
+    );
+
+-- Videos: anyone can read; only staff can modify
+CREATE POLICY "Anyone can view videos" ON videos
+    FOR SELECT USING (true);
+CREATE POLICY "Staff can manage videos" ON videos
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_staff = true)
+    ) WITH CHECK (
+        EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.is_staff = true)
+    );
