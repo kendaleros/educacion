@@ -142,3 +142,8 @@ const AUTH = {
         }
     }
 };
+
+// Module exports for testing (Node.js / Jest)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { AUTH };
+}

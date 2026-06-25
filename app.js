@@ -259,3 +259,20 @@ const DB = {
         return true;
     }
 };
+
+// Module exports for testing (Node.js / Jest)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        normalizeVideoInput,
+        getGoogleDriveFileId,
+        isOdyseeUrl,
+        getOdyseeEmbedUrl,
+        getVideoProvider,
+        getGoogleDriveDirectUrl,
+        getEmbedUrl,
+        getThumbnailUrl,
+        getCandidateThumbnails,
+        DB,
+        DEFAULT_THUMBNAIL
+    };
+}
