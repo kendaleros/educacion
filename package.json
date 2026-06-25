@@ -1,0 +1,16 @@
+{
+  "name": "educacion",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "test": "jest --coverage",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
