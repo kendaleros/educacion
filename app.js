@@ -3,6 +3,10 @@
 // Default thumbnail for all videos
 const DEFAULT_THUMBNAIL = "https://i.imgur.com/sYV8Lyi.png";
 
+// Regex patterns for video provider detection (used by multiple functions)
+const YT_REGEX = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+const VIMEO_REGEX = /vimeo\.com\/(?:video\/)?([0-9]+)/;
+
 function normalizeVideoInput(value) {
     if (!value) return "";
     const input = value.trim();
@@ -61,8 +65,8 @@ function getVideoProvider(url) {
     if (!source) return "generic";
     if (getGoogleDriveFileId(source)) return "drive";
     if (isOdyseeUrl(source)) return "odysee";
-    if (source.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)) return "youtube";
-    if (source.match(/vimeo\.com\/(?:video\/)?([0-9]+)/)) return "vimeo";
+    if (source.match(YT_REGEX)) return "youtube";
+    if (source.match(VIMEO_REGEX)) return "vimeo";
     return "generic";
 }
 
@@ -79,12 +83,12 @@ function getEmbedUrl(url, options = {}) {
     if (!source) return "";
 
     const autoplay = options.autoplay === true;
-    const ytMatch = source.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    const ytMatch = source.match(YT_REGEX);
     if (ytMatch) {
         return `https://www.youtube.com/embed/${ytMatch[1]}${autoplay ? "?autoplay=1" : ""}`;
     }
 
-    const vimeoMatch = source.match(/vimeo\.com\/(?:video\/)?([0-9]+)/);
+    const vimeoMatch = source.match(VIMEO_REGEX);
     if (vimeoMatch) {
         const params = new URLSearchParams({
             badge: "0",
@@ -123,7 +127,7 @@ function getCandidateThumbnails(url) {
     
     if (!source) return candidates;
 
-    const ytMatch = source.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    const ytMatch = source.match(YT_REGEX);
     if (ytMatch) {
         const id = ytMatch[1];
         candidates.push(
@@ -136,7 +140,7 @@ function getCandidateThumbnails(url) {
         return candidates;
     }
 
-    const vimeoMatch = source.match(/vimeo\.com\/(?:video\/)?([0-9]+)/);
+    const vimeoMatch = source.match(VIMEO_REGEX);
     if (vimeoMatch) {
         candidates.push(`https://vumbnail.com/${vimeoMatch[1]}.jpg`);
         return candidates;
@@ -160,102 +164,52 @@ function getCandidateThumbnails(url) {
 }
 
 // Database Operations using Supabase
+// Internal helpers to reduce repetitive error handling across CRUD methods.
+async function _dbQuery(queryPromise, fallback = []) {
+    const { data, error } = await queryPromise;
+    if (error) { console.error(error); return fallback; }
+    return data;
+}
+
+async function _dbMutate(queryPromise, fallback = null) {
+    const { data, error } = await queryPromise;
+    if (error) { console.error(error); return fallback; }
+    return data ?? true;
+}
+
 const DB = {
     // --- Users ---
-    getUsers: async () => {
-        const { data, error } = await supabase.from('users').select('*');
-        if (error) { console.error(error); return []; }
-        return data;
-    },
-
-    approveUser: async (id) => {
-        const { error } = await supabase.from('users').update({ is_validated: true }).eq('id', id);
-        if (error) { console.error(error); return false; }
-        return true;
-    },
-
-    suspendUser: async (id) => {
-        const { error } = await supabase.from('users').update({ is_validated: false }).eq('id', id);
-        if (error) { console.error(error); return false; }
-        return true;
-    },
+    getUsers: () => _dbQuery(supabase.from('users').select('*')),
+    approveUser: (id) => _dbMutate(supabase.from('users').update({ is_validated: true }).eq('id', id), false),
+    suspendUser: (id) => _dbMutate(supabase.from('users').update({ is_validated: false }).eq('id', id), false),
 
     // --- Courses ---
-    getCourses: async () => {
-        const { data, error } = await supabase.from('courses').select('*');
-        if (error) { console.error(error); return []; }
-        return data;
-    },
-
-    createCourse: async (title, description) => {
-        const { data, error } = await supabase.from('courses').insert([{ title, description }]).select().single();
-        if (error) { console.error(error); return null; }
-        return data;
-    },
-
-    updateCourse: async (id, title, description) => {
-        const { data, error } = await supabase.from('courses').update({ title, description }).eq('id', id).select().single();
-        if (error) { console.error(error); return null; }
-        return data;
-    },
-
-    deleteCourse: async (id) => {
-        const { error } = await supabase.from('courses').delete().eq('id', id);
-        if (error) { console.error(error); return false; }
-        return true;
-    },
+    getCourses: () => _dbQuery(supabase.from('courses').select('*')),
+    createCourse: (title, description) => _dbMutate(supabase.from('courses').insert([{ title, description }]).select().single()),
+    updateCourse: (id, title, description) => _dbMutate(supabase.from('courses').update({ title, description }).eq('id', id).select().single()),
+    deleteCourse: (id) => _dbMutate(supabase.from('courses').delete().eq('id', id), false),
 
     // --- Modules ---
-    getModules: async (courseId = null) => {
+    getModules: (courseId = null) => {
         let query = supabase.from('modules').select('*').order('order');
         if (courseId) query = query.eq('course_id', courseId);
-        const { data, error } = await query;
-        if (error) { console.error(error); return []; }
-        return data;
+        return _dbQuery(query);
     },
-
-    createModule: async (courseId, title, description, order = 0) => {
-        const { data, error } = await supabase.from('modules').insert([{ course_id: courseId, title, description, order: parseInt(order) || 0 }]).select().single();
-        if (error) { console.error(error); return null; }
-        return data;
-    },
-
-    updateModule: async (id, title, description, order = 0) => {
-        const { data, error } = await supabase.from('modules').update({ title, description, order: parseInt(order) || 0 }).eq('id', id).select().single();
-        if (error) { console.error(error); return null; }
-        return data;
-    },
-
-    deleteModule: async (id) => {
-        const { error } = await supabase.from('modules').delete().eq('id', id);
-        if (error) { console.error(error); return false; }
-        return true;
-    },
+    createModule: (courseId, title, description, order = 0) =>
+        _dbMutate(supabase.from('modules').insert([{ course_id: courseId, title, description, order: parseInt(order) || 0 }]).select().single()),
+    updateModule: (id, title, description, order = 0) =>
+        _dbMutate(supabase.from('modules').update({ title, description, order: parseInt(order) || 0 }).eq('id', id).select().single()),
+    deleteModule: (id) => _dbMutate(supabase.from('modules').delete().eq('id', id), false),
 
     // --- Videos ---
-    getVideos: async (moduleId = null) => {
+    getVideos: (moduleId = null) => {
         let query = supabase.from('videos').select('*').order('order');
         if (moduleId) query = query.eq('module_id', moduleId);
-        const { data, error } = await query;
-        if (error) { console.error(error); return []; }
-        return data;
+        return _dbQuery(query);
     },
-
-    createVideo: async (moduleId, title, videoUrl, description, order = 0) => {
-        const { data, error } = await supabase.from('videos').insert([{ module_id: moduleId, title, video_url: videoUrl, description, order: parseInt(order) || 0 }]).select().single();
-        if (error) { console.error(error); return null; }
-        return data;
-    },
-
-    updateVideo: async (id, title, videoUrl, description, order = 0) => {
-        const { data, error } = await supabase.from('videos').update({ title, video_url: videoUrl, description, order: parseInt(order) || 0 }).eq('id', id).select().single();
-        if (error) { console.error(error); return null; }
-        return data;
-    },
-
-    deleteVideo: async (id) => {
-        const { error } = await supabase.from('videos').delete().eq('id', id);
-        if (error) { console.error(error); return false; }
-        return true;
-    }
+    createVideo: (moduleId, title, videoUrl, description, order = 0) =>
+        _dbMutate(supabase.from('videos').insert([{ module_id: moduleId, title, video_url: videoUrl, description, order: parseInt(order) || 0 }]).select().single()),
+    updateVideo: (id, title, videoUrl, description, order = 0) =>
+        _dbMutate(supabase.from('videos').update({ title, video_url: videoUrl, description, order: parseInt(order) || 0 }).eq('id', id).select().single()),
+    deleteVideo: (id) => _dbMutate(supabase.from('videos').delete().eq('id', id), false)
 };
