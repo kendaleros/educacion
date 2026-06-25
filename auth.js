@@ -63,20 +63,24 @@ const AUTH = {
     register: async (username, email, password) => {
         try {
             // Verificar si username ya existe
-            let { data: existingUsername } = await supabase
+            let { data: existingUsername, error: usernameError } = await supabase
                 .from('users')
                 .select('id')
                 .eq('username', username);
+
+            if (usernameError) throw usernameError;
 
             if (existingUsername && existingUsername.length > 0) {
                 return { success: false, message: "El nombre de usuario ya está registrado." };
             }
 
             // Verificar si email ya existe
-            let { data: existingEmail } = await supabase
+            let { data: existingEmail, error: emailError } = await supabase
                 .from('users')
                 .select('id')
                 .eq('email', email);
+
+            if (emailError) throw emailError;
 
             if (existingEmail && existingEmail.length > 0) {
                 return { success: false, message: "El correo electrónico ya está registrado." };

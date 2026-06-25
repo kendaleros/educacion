@@ -106,7 +106,14 @@
                 return;
             }
 
-            const courses = await DB.getCourses();
+            let courses;
+            try {
+                courses = await DB.getCourses();
+            } catch (err) {
+                console.error("Error al cargar cursos:", err);
+                document.getElementById("course-title").innerText = "Error al cargar el curso";
+                return;
+            }
             currentCourse = courses.find(c => c.id === courseId);
             if (!currentCourse) {
                 window.location.href = "dashboard.html";
@@ -129,18 +136,25 @@
         });
 
         async function renderModulesAccordion() {
-            const modules = (await DB.getModules())
+            const container = document.getElementById("modules-accordion");
+            let allModules, allVideos;
+            try {
+                allModules = await DB.getModules();
+                allVideos = await DB.getVideos();
+            } catch (err) {
+                console.error("Error al cargar módulos:", err);
+                container.innerHTML = `<p style="color: var(--danger); font-style: italic; text-align: center;">Error al cargar el contenido del curso.</p>`;
+                return;
+            }
+
+            const modules = allModules
                 .filter(m => m.course_id === currentCourse.id)
                 .sort((a, b) => a.order - b.order);
-
-            const container = document.getElementById("modules-accordion");
 
             if (modules.length === 0) {
                 container.innerHTML = `<p style="color: var(--text-muted); font-style: italic; text-align: center;">No hay módulos para este curso aún.</p>`;
                 return;
             }
-
-            const allVideos = await DB.getVideos();
 
             container.innerHTML = modules.map(mod => {
                 const videos = allVideos
@@ -212,9 +226,18 @@
         setTimeout(loadBestThumbnails, 50);
 
         async function playVideo(id, autoStart = true) {
-            const videos = await DB.getVideos();
+            let videos;
+            try {
+                videos = await DB.getVideos();
+            } catch (err) {
+                console.error("Error al cargar videos:", err);
+                return;
+            }
             const video = videos.find(v => v.id === id);
-            if (!video) return;
+            if (!video) {
+                console.warn(`Video con id ${id} no encontrado.`);
+                return;
+            }
 
             document.querySelectorAll(".playlist-video-item").forEach(item => item.classList.remove("active"));
 
@@ -279,7 +302,9 @@
                     };
 
                     if (autoStart) {
-                        nativePlayer.play().catch(() => {});
+                        nativePlayer.play().catch(err => {
+                            console.warn("Autoplay bloqueado por el navegador:", err.message);
+                        });
                     }
                 } else {
                     if (videoContainer) videoContainer.classList.add("video-mode-embed");
@@ -306,13 +331,20 @@
         }
 
         async function loadFirstVideo() {
-            const modules = (await DB.getModules())
+            let allModules, allVideos;
+            try {
+                allModules = await DB.getModules();
+                allVideos = await DB.getVideos();
+            } catch (err) {
+                console.error("Error al cargar primer video:", err);
+                return;
+            }
+
+            const modules = allModules
                 .filter(m => m.course_id === currentCourse.id)
                 .sort((a, b) => a.order - b.order);
 
             if (modules.length === 0) return;
-
-            const allVideos = await DB.getVideos();
 
             for (const mod of modules) {
                 const videos = allVideos

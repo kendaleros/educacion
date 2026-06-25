@@ -191,13 +191,18 @@
             document.getElementById("admin-dashboard").style.display = "none";
             document.getElementById("student-dashboard").style.display = "none";
 
-            if (esAdmin) {
-                document.getElementById("admin-dashboard").style.display = "grid";
-                await renderAdminUsers();
-                await renderAdminCourses();
-            } else {
-                document.getElementById("student-dashboard").style.display = "block";
-                await renderStudentCourses();
+            try {
+                if (esAdmin) {
+                    document.getElementById("admin-dashboard").style.display = "grid";
+                    await renderAdminUsers();
+                    await renderAdminCourses();
+                } else {
+                    document.getElementById("student-dashboard").style.display = "block";
+                    await renderStudentCourses();
+                }
+            } catch (err) {
+                console.error("Error al cargar el dashboard:", err);
+                showAlert("danger", "Error al cargar los datos. Por favor, recarga la p\u00e1gina.");
             }
         }
 
@@ -214,16 +219,22 @@
 
         // ================= STUDENT RENDER =================
         async function renderStudentCourses() {
-            const courses = await DB.getCourses();
             const grid = document.getElementById("student-courses-grid");
+            let courses, allModules, allVideos;
+            try {
+                courses = await DB.getCourses();
+                allModules = await DB.getModules();
+                allVideos = await DB.getVideos();
+            } catch (err) {
+                console.error("Error al cargar cursos del estudiante:", err);
+                grid.innerHTML = `<p style="grid-column: 1/-1; color: var(--danger); text-align: center;">Error al cargar los cursos. Intenta recargar la p\u00e1gina.</p>`;
+                return;
+            }
 
             if (courses.length === 0) {
                 grid.innerHTML = `<p style="grid-column: 1/-1; color: var(--text-muted); text-align: center;">No hay cursos disponibles en este momento.</p>`;
                 return;
             }
-
-            const allModules = await DB.getModules();
-            const allVideos = await DB.getVideos();
 
             grid.innerHTML = courses.map(course => {
                 const modules = allModules.filter(m => m.course_id === course.id);
@@ -243,7 +254,15 @@
 
         // ================= ADMIN USERS RENDER =================
         async function renderAdminUsers() {
-            const users = (await DB.getUsers()).filter(u => !u.is_staff);
+            let allUsers;
+            try {
+                allUsers = await DB.getUsers();
+            } catch (err) {
+                console.error("Error al cargar usuarios:", err);
+                showAlert("danger", "Error al cargar la lista de usuarios.");
+                return;
+            }
+            const users = allUsers.filter(u => !u.is_staff);
             const pendingList = document.getElementById("pending-users-list");
             const activeList = document.getElementById("active-users-list");
 
@@ -276,33 +295,47 @@
         }
 
         async function approveUser(id) {
-            if (await DB.approveUser(id)) {
+            try {
+                await DB.approveUser(id);
                 showAlert("success", "El usuario ha sido aprobado con éxito.");
                 await renderAdminUsers();
+            } catch (err) {
+                console.error("Error al aprobar usuario:", err);
+                showAlert("danger", "Error al aprobar el usuario. Intenta de nuevo.");
             }
         }
 
         async function suspendUser(id) {
             if (confirm("¿Estás seguro de que deseas suspender el acceso de este estudiante?")) {
-                if (await DB.suspendUser(id)) {
+                try {
+                    await DB.suspendUser(id);
                     showAlert("warning", "El usuario ha sido suspendido.");
                     await renderAdminUsers();
+                } catch (err) {
+                    console.error("Error al suspender usuario:", err);
+                    showAlert("danger", "Error al suspender el usuario. Intenta de nuevo.");
                 }
             }
         }
 
         // ================= ADMIN COURSES RENDER =================
         async function renderAdminCourses() {
-            const courses = await DB.getCourses();
             const container = document.getElementById("admin-courses-container");
+            let courses, allModules, allVideos;
+            try {
+                courses = await DB.getCourses();
+                allModules = await DB.getModules();
+                allVideos = await DB.getVideos();
+            } catch (err) {
+                console.error("Error al cargar cursos del admin:", err);
+                container.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 40px;">Error al cargar los cursos. Intenta recargar la página.</p>`;
+                return;
+            }
 
             if (courses.length === 0) {
                 container.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 40px;">No hay cursos creados en la plataforma. ¡Crea el primero!</p>`;
                 return;
             }
-
-            const allModules = await DB.getModules();
-            const allVideos = await DB.getVideos();
 
             container.innerHTML = courses.map(course => {
                 const modules = allModules
@@ -372,7 +405,18 @@
             const modal = document.getElementById("course-modal");
             const titleEl = document.getElementById("course-modal-title");
             if (id) {
-                const course = (await DB.getCourses()).find(c => c.id === id);
+                let course;
+                try {
+                    course = (await DB.getCourses()).find(c => c.id === id);
+                } catch (err) {
+                    console.error("Error al cargar curso para edición:", err);
+                    showAlert("danger", "Error al cargar el curso. Intenta de nuevo.");
+                    return;
+                }
+                if (!course) {
+                    showAlert("danger", "No se encontró el curso solicitado.");
+                    return;
+                }
                 document.getElementById("course-id").value = course.id;
                 document.getElementById("course-title").value = course.title;
                 document.getElementById("course-desc").value = course.description;
@@ -391,22 +435,32 @@
             const id = document.getElementById("course-id").value;
             const title = document.getElementById("course-title").value.trim();
             const desc = document.getElementById("course-desc").value.trim();
-            if (id) {
-                await DB.updateCourse(parseInt(id), title, desc);
-                showAlert("success", "El curso ha sido actualizado.");
-            } else {
-                await DB.createCourse(title, desc);
-                showAlert("success", "El curso ha sido creado con éxito.");
+            try {
+                if (id) {
+                    await DB.updateCourse(parseInt(id), title, desc);
+                    showAlert("success", "El curso ha sido actualizado.");
+                } else {
+                    await DB.createCourse(title, desc);
+                    showAlert("success", "El curso ha sido creado con éxito.");
+                }
+                closeModal('course-modal');
+                await renderAdminCourses();
+            } catch (err) {
+                console.error("Error al guardar curso:", err);
+                showAlert("danger", "Error al guardar el curso. Intenta de nuevo.");
             }
-            closeModal('course-modal');
-            await renderAdminCourses();
         }
 
         async function deleteCourse(id) {
             if (confirm("¿Estás seguro de que deseas eliminar este curso? Se borrarán todos sus módulos y videos de forma definitiva.")) {
-                await DB.deleteCourse(id);
-                showAlert("danger", "Curso eliminado.");
-                await renderAdminCourses();
+                try {
+                    await DB.deleteCourse(id);
+                    showAlert("danger", "Curso eliminado.");
+                    await renderAdminCourses();
+                } catch (err) {
+                    console.error("Error al eliminar curso:", err);
+                    showAlert("danger", "Error al eliminar el curso. Intenta de nuevo.");
+                }
             }
         }
 
@@ -414,22 +468,31 @@
             const modal = document.getElementById("module-modal");
             const titleEl = document.getElementById("module-modal-title");
             document.getElementById("module-course-id").value = courseId;
-            if (id) {
-                const mod = (await DB.getModules()).find(m => m.id === id);
-                document.getElementById("module-id").value = mod.id;
-                document.getElementById("module-title").value = mod.title;
-                document.getElementById("module-desc").value = mod.description;
-                document.getElementById("module-order").value = mod.order;
-                titleEl.innerText = "Editar Módulo";
-            } else {
-                document.getElementById("module-id").value = "";
-                document.getElementById("module-title").value = "";
-                document.getElementById("module-desc").value = "";
-                const count = (await DB.getModules()).filter(m => m.course_id === courseId).length;
-                document.getElementById("module-order").value = count + 1;
-                titleEl.innerText = "Agregar Módulo";
+            try {
+                if (id) {
+                    const mod = (await DB.getModules()).find(m => m.id === id);
+                    if (!mod) {
+                        showAlert("danger", "No se encontró el módulo solicitado.");
+                        return;
+                    }
+                    document.getElementById("module-id").value = mod.id;
+                    document.getElementById("module-title").value = mod.title;
+                    document.getElementById("module-desc").value = mod.description;
+                    document.getElementById("module-order").value = mod.order;
+                    titleEl.innerText = "Editar Módulo";
+                } else {
+                    document.getElementById("module-id").value = "";
+                    document.getElementById("module-title").value = "";
+                    document.getElementById("module-desc").value = "";
+                    const count = (await DB.getModules()).filter(m => m.course_id === courseId).length;
+                    document.getElementById("module-order").value = count + 1;
+                    titleEl.innerText = "Agregar Módulo";
+                }
+                modal.style.display = "flex";
+            } catch (err) {
+                console.error("Error al abrir modal de módulo:", err);
+                showAlert("danger", "Error al cargar el módulo. Intenta de nuevo.");
             }
-            modal.style.display = "flex";
         }
 
         async function handleModuleSubmit(e) {
@@ -439,22 +502,32 @@
             const title = document.getElementById("module-title").value.trim();
             const desc = document.getElementById("module-desc").value.trim();
             const order = document.getElementById("module-order").value;
-            if (id) {
-                await DB.updateModule(parseInt(id), title, desc, order);
-                showAlert("success", "El módulo ha sido actualizado.");
-            } else {
-                await DB.createModule(courseId, title, desc, order);
-                showAlert("success", "Módulo agregado al curso.");
+            try {
+                if (id) {
+                    await DB.updateModule(parseInt(id), title, desc, order);
+                    showAlert("success", "El módulo ha sido actualizado.");
+                } else {
+                    await DB.createModule(courseId, title, desc, order);
+                    showAlert("success", "Módulo agregado al curso.");
+                }
+                closeModal('module-modal');
+                await renderAdminCourses();
+            } catch (err) {
+                console.error("Error al guardar módulo:", err);
+                showAlert("danger", "Error al guardar el módulo. Intenta de nuevo.");
             }
-            closeModal('module-modal');
-            await renderAdminCourses();
         }
 
         async function deleteModule(id) {
             if (confirm("¿Estás seguro de borrar este módulo y todos sus videos asociados?")) {
-                await DB.deleteModule(id);
-                showAlert("danger", "Módulo eliminado.");
-                await renderAdminCourses();
+                try {
+                    await DB.deleteModule(id);
+                    showAlert("danger", "Módulo eliminado.");
+                    await renderAdminCourses();
+                } catch (err) {
+                    console.error("Error al eliminar módulo:", err);
+                    showAlert("danger", "Error al eliminar el módulo. Intenta de nuevo.");
+                }
             }
         }
 
@@ -462,22 +535,32 @@
             const modal = document.getElementById("video-modal");
             const titleEl = document.getElementById("video-modal-title");
             document.getElementById("video-module-id").value = moduleId;
-            if (id) {
-                const vid = (await DB.getVideos()).find(v => v.id === id);
-                document.getElementById("video-id").value = vid.id;
-                document.getElementById("video-title").value = vid.title;
-                document.getElementById("video-url").value = vid.video_url;
-                document.getElementById("video-desc").value = vid.description;
-                document.getElementById("video-order").value = vid.order;
-                titleEl.innerText = "Editar Video";
-            } else {
-                document.getElementById("video-id").value = "";
-                document.getElementById("video-title").value = "";
-                document.getElementById("video-url").value = "";
-                document.getElementById("video-desc").value = "";
-                const count = (await DB.getVideos()).filter(v => v.module_id === moduleId).length;
-                document.getElementById("video-order").value = count + 1;
-                titleEl.innerText = "Agregar Video";
+            try {
+                if (id) {
+                    const vid = (await DB.getVideos()).find(v => v.id === id);
+                    if (!vid) {
+                        showAlert("danger", "No se encontró el video solicitado.");
+                        return;
+                    }
+                    document.getElementById("video-id").value = vid.id;
+                    document.getElementById("video-title").value = vid.title;
+                    document.getElementById("video-url").value = vid.video_url;
+                    document.getElementById("video-desc").value = vid.description;
+                    document.getElementById("video-order").value = vid.order;
+                    titleEl.innerText = "Editar Video";
+                } else {
+                    document.getElementById("video-id").value = "";
+                    document.getElementById("video-title").value = "";
+                    document.getElementById("video-url").value = "";
+                    document.getElementById("video-desc").value = "";
+                    const count = (await DB.getVideos()).filter(v => v.module_id === moduleId).length;
+                    document.getElementById("video-order").value = count + 1;
+                    titleEl.innerText = "Agregar Video";
+                }
+            } catch (err) {
+                console.error("Error al abrir modal de video:", err);
+                showAlert("danger", "Error al cargar el video. Intenta de nuevo.");
+                return;
             }
             // Clear thumbnail candidate UI when opening
             document.getElementById('thumbnail-candidates').innerHTML = '';
@@ -496,15 +579,20 @@
             const url = document.getElementById("video-url").value.trim();
             const desc = document.getElementById("video-desc").value.trim();
             const order = document.getElementById("video-order").value;
-            if (id) {
-                await DB.updateVideo(parseInt(id), title, url, desc, order);
-                showAlert("success", "El video ha sido actualizado.");
-            } else {
-                await DB.createVideo(moduleId, title, url, desc, order);
-                showAlert("success", "Video agregado al módulo.");
+            try {
+                if (id) {
+                    await DB.updateVideo(parseInt(id), title, url, desc, order);
+                    showAlert("success", "El video ha sido actualizado.");
+                } else {
+                    await DB.createVideo(moduleId, title, url, desc, order);
+                    showAlert("success", "Video agregado al módulo.");
+                }
+                closeModal('video-modal');
+                await renderAdminCourses();
+            } catch (err) {
+                console.error("Error al guardar video:", err);
+                showAlert("danger", "Error al guardar el video. Intenta de nuevo.");
             }
-            closeModal('video-modal');
-            await renderAdminCourses();
         }
 
         // Thumbnail candidate selection utilities
@@ -579,9 +667,14 @@
 
         async function deleteVideo(id) {
             if (confirm("¿Estás seguro de borrar este video?")) {
-                await DB.deleteVideo(id);
-                showAlert("danger", "Video eliminado.");
-                await renderAdminCourses();
+                try {
+                    await DB.deleteVideo(id);
+                    showAlert("danger", "Video eliminado.");
+                    await renderAdminCourses();
+                } catch (err) {
+                    console.error("Error al eliminar video:", err);
+                    showAlert("danger", "Error al eliminar el video. Intenta de nuevo.");
+                }
             }
         }
 
